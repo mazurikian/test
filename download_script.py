@@ -65,11 +65,11 @@ def main():
             continue
         
         # Generar campos automáticamente
-        identifier = f"twitch-{sanitize_identifier(title)}-{datetime.now().strftime('%Y%m%d')}"
+        identifier = f"vector-twitch-{sanitize_identifier(title)}-{datetime.now().strftime('%Y%m%d')}"
         metadata = generate_metadata(title)
         
         safe_title = "".join(c for c in title if c.isalnum() or c in (' ', '-', '_')).rstrip()
-        output_filename = f"downloads/{safe_title}.mp4"  # Cambiado a .mp4 para mejor compatibilidad
+        output_filename = f"downloads/{safe_title}.ts"  # Cambiado a .mp4 para mejor compatibilidad
         
         print(f"\nProcesando: {title}")
         print(f"Identifier: {identifier}")
