@@ -20,11 +20,13 @@ jobs:
         with:
           python-version: '3.13.2'
 
-      - name: Install dependencies
+      - name: Install dependencies and setup work directory
         run: |
           sudo apt update
           sudo apt install -y ffmpeg
           pip install internetarchive yt-dlp
+          sudo mkdir -p /mnt/worskpace/
+          sudo chown -R $USER:$USER /mnt/worskpace/
 
       - name: Create/modify ia.ini file
         run: |
@@ -41,4 +43,5 @@ jobs:
           echo "screenname = dripzurek169" >> ~/.config/internetarchive/ia.ini
 
       - name: Run download and upload for each chunk
+        working-directory: /mnt/worskpace/
         run: python download_script.py output_vods_chunk_${{ matrix.chunk }}.json
