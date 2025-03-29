@@ -78,7 +78,9 @@ def process_video(video):
     
     # Descarga el video utilizando ffmpeg; se muestran advertencias y errores en la consola.
     download_video(m3u8_url, output_filename)
+    print(f"Descarga completada: {output_filename}")
     
+    print("Iniciando la subida a Internet Archive...")
     # Sube el video a Internet Archive de manera silenciosa.
     upload_result = upload(
         identifier,
