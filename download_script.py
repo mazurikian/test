@@ -146,7 +146,7 @@ def process_video(video):
     # Elimina el archivo descargado localmente.
     os.remove(new_filename)
 
-# Función principal que carga la lista de videos y los procesa.
+# Función principal que carga la lista de videos y los procesa en orden inverso.
 def main():
     if len(sys.argv) < 2:
         sys.exit("Uso: script.py <archivo_json>")
@@ -155,8 +155,8 @@ def main():
     with open(json_file, "r", encoding="utf-8") as f:
         videos = json.load(f)
     
-    # Se procesa cada video de forma independiente.
-    for video in videos:
+    # Procesa cada video en orden inverso
+    for video in reversed(videos):
         process_video(video)
 
 if __name__ == "__main__":
