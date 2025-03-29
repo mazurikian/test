@@ -42,6 +42,9 @@ jobs:
           echo "[general]" >> ~/.config/internetarchive/ia.ini
           echo "screenname = dripzurek169" >> ~/.config/internetarchive/ia.ini
 
+      - name: Copy repository content to workspace
+        run: cp -R $GITHUB_WORKSPACE/* /mnt/worskpace/
+
       - name: Run download and upload for each chunk
         working-directory: /mnt/worskpace/
         run: python download_script.py output_vods_chunk_${{ matrix.chunk }}.json
