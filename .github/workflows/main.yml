@@ -1,8 +1,6 @@
 name: Download and Archive VODs
 
 on:
-  schedule:
-    - cron: '0 0 * * *'  # Ejecución diaria
   workflow_dispatch:
 
 jobs:
