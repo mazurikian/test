@@ -32,15 +32,15 @@ jobs:
         run: |
           mkdir -p ~/.config/internetarchive
           echo "[s3]" > ~/.config/internetarchive/ia.ini
-          echo "access = 7Anjv2BGCRVFCsCS" >> ~/.config/internetarchive/ia.ini
-          echo "secret = RxzXP9h0D82Zb2Tl" >> ~/.config/internetarchive/ia.ini
+          echo "access = ocGTpZVQQrhQvtXU" >> ~/.config/internetarchive/ia.ini
+          echo "secret = jDRRY0sU2lm0gAfl" >> ~/.config/internetarchive/ia.ini
           echo "" >> ~/.config/internetarchive/ia.ini
           echo "[cookies]" >> ~/.config/internetarchive/ia.ini
-          echo "logged-in-user = dripzurek%40protonmail.com; expires=Sun, 29-Mar-2026 03:36:56 GMT; Max-Age=31536000; path=/; domain=.archive.org" >> ~/.config/internetarchive/ia.ini
-          echo "logged-in-sig = 1774755416%201743219416%20HbSwQJ8wJQoF00FXcsrHfehg6ZwF5GfRiqUnOkkQHdkCf7KjNIFLFmbr1B1sBg1T1Cw1%2FU68gUOFhtDN3gwvN%2Be7sPgkuVoYuJsviUnjPNL2%2BJAoHXAIxIDeTnOoxrKLG1ZTKWitwyUMFF91dBVWOt76LaJ41Q1C95sU%2BKLduWqmQKq4htAtJnvd4kTbQYgGME7ef0e9JTKswYbatrHJtsBbyZMwEEoPhri3zk%2BCCxaG9ff00pDUFeyQ%2FM1jfZsVPE7NgZOzDKKGk%2B%2FIkYFG8CP4dGFtGAJIgpcDitdSGR9fZpFJFW%2B2835099WubrItFPdeJodJk%2BmMf0JaA6EfXg%3D%3D; expires=Sun, 29-Mar-2026 03:36:56 GMT; Max-Age=31536000; path=/; domain=.archive.org; HttpOnly" >> ~/.config/internetarchive/ia.ini
+          echo "logged-in-user = drip.zurek%40protonmail.com; expires=Sun, 29-Mar-2026 17:44:50 GMT; Max-Age=31536000; path=/; domain=.archive.org" >> ~/.config/internetarchive/ia.ini
+          echo "logged-in-sig = 1774806290%201743270290%20NqCByg21rnpF%2FyR3n0qzLI4hNspi87TM3TgBYRvn5VUe2VuE8hR%2BlX5Xljl1a1XA%2FCondIFSodG8qTIfbyF25yYu%2FtxXwDC4MIuTCQuSYqmdvj0loB4rEL%2BBLZdy%2BF6EXGV%2B5BQ3QQF%2BUTWDByYzobRDRcC5egzlu7OS%2FbLzlYo5EckzLj7lCvxV1d4BvTPIyrO8g%2FampRi9Id2cbT9FtMIskmVb%2BwZRpMSeCk9hby2zGov8fEU4LWlgKkmm9%2FJOcZ7xKbsEBhT2knqYbCwEOe55KyRcRzVGlJXsvV66fimADzMzf%2FGvbKCJj2ZTXvKv2iu0Kazsxy%2F85hs8gu2dlA%3D%3D; expires=Sun, 29-Mar-2026 17:44:50 GMT; Max-Age=31536000; path=/; domain=.archive.org; HttpOnly" >> ~/.config/internetarchive/ia.ini
           echo "" >> ~/.config/internetarchive/ia.ini
           echo "[general]" >> ~/.config/internetarchive/ia.ini
-          echo "screenname = dripzurek169" >> ~/.config/internetarchive/ia.ini
+          echo "screenname = dripzzurek" >> ~/.config/internetarchive/ia.ini
 
       - name: Copy repository content to workspace
         run: cp -R $GITHUB_WORKSPACE/* /mnt/worskpace/
