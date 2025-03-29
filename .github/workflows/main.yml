@@ -1,0 +1,41 @@
+name: Download and Archive VODs
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # Ejecución diaria
+  workflow_dispatch:
+
+jobs:
+  process-vods:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y ffmpeg
+        pip install yt-dlp internetarchive
+
+    - name: Create/modify ia.ini file
+      run: |
+        mkdir -p ~/.config/internetarchive
+        echo "[s3]" > ~/.config/internetarchive/ia.ini
+        echo "access = 7Anjv2BGCRVFCsCS" >> ~/.config/internetarchive/ia.ini
+        echo "secret = RxzXP9h0D82Zb2Tl" >> ~/.config/internetarchive/ia.ini
+        echo "" >> ~/.config/internetarchive/ia.ini
+        echo "[cookies]" >> ~/.config/internetarchive/ia.ini
+        echo "logged-in-user = dripzurek%40protonmail.com; expires=Sat, 28-Mar-2026 19:57:04 GMT; Max-Age=31536000; path=/; domain=.archive.org" >> ~/.config/internetarchive/ia.ini
+        echo "logged-in-sig = 1774727824%201743191824%20VMCYBx76D9QrjHgOWQ3hMuUD3SNs5KQU3QybJYM8XsD4jEdeHc3DSKMYC5cdSuax2%2BZh49D5iQpWPDkhHUrhqDDyCrRK8NxzVWjCz0Bw26eO8Pl7V9ocBDNIDY5HqMCxgjcimUdczb2owCLUpytqo0QfO3lWlfZLXsm2rJBtoR5s58b3NT9VZlmYHCEey8lOp%2FlnuTOpjARucIPHgJGBX13DwT6bxi70UfMSMR3NVeibseZpvgNCpTFwUZb%2FwOXa%2Be%2FhGzfD%2FXsw1%2BYX0l2d60%2B9BrYSG0nf76rarUZkOtc1XjhAEywSCaiYWO32wTaf2o3pwJ5aR2tdi1ElC2%2FeYA%3D%3D; expires=Sat, 28-Mar-2026 19:57:04 GMT; Max-Age=31536000; path=/; domain=.archive.org; HttpOnly" >> ~/.config/internetarchive/ia.ini
+        echo "" >> ~/.config/internetarchive/ia.ini
+        echo "[general]" >> ~/.config/internetarchive/ia.ini
+        echo "screenname = dripzurek" >> ~/.config/internetarchive/ia.ini
+
+    - name: Run download and upload
+      run: python download_script.py
