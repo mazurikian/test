@@ -24,7 +24,7 @@ jobs:
         run: |
           sudo apt update
           sudo apt upgrade
-          sudo apt install ffmpeg
+          sudo apt install -y ffmpeg
           pip install internetarchive yt-dlp
 
       - name: Create/modify ia.ini file
@@ -35,11 +35,11 @@ jobs:
           echo "secret = RxzXP9h0D82Zb2Tl" >> ~/.config/internetarchive/ia.ini
           echo "" >> ~/.config/internetarchive/ia.ini
           echo "[cookies]" >> ~/.config/internetarchive/ia.ini
-          echo "logged-in-user = dripzurek%40protonmail.com; expires=Sat, 28-Mar-2026 19:57:04 GMT; Max-Age=31536000; path=/; domain=.archive.org" >> ~/.config/internetarchive/ia.ini
-          echo "logged-in-sig = 1774727824%201743191824%20VMCYBx76D9QrjHgOWQ3hMuUD3SNs5KQU3QybJYM8XsD4jEdeHc3DSKMYC5cdSuax2%2BZh49D5iQpWPDkhHUrhqDDyCrRK8NxzVWjCz0Bw26eO8Pl7V9ocBDNIDY5HqMCxgjcimUdczb2owCLUpytqo0QfO3lWlfZLXsm2rJBtoR5s58b3NT9VZlmYHCEey8lOp%2FlnuTOpjARucIPHgJGBX13DwT6bxi70UfMSMR3NVeibseZpvgNCpTFwUZb%2FwOXa%2Be%2FhGzfD%2FXsw1%2BYX0l2d60%2B9BrYSG0nf76rarUZkOtc1XjhAEywSCaiYWO32wTaf2o3pwJ5aR2tdi1ElC2%2FeYA%3D%3D; expires=Sat, 28-Mar-2026 19:57:04 GMT; Max-Age=31536000; path=/; domain=.archive.org; HttpOnly" >> ~/.config/internetarchive/ia.ini
+          echo "logged-in-user = dripzurek%40protonmail.com; expires=Sun, 29-Mar-2026 03:36:56 GMT; Max-Age=31536000; path=/; domain=.archive.org" >> ~/.config/internetarchive/ia.ini
+          echo "logged-in-sig = 1774755416%201743219416%20HbSwQJ8wJQoF00FXcsrHfehg6ZwF5GfRiqUnOkkQHdkCf7KjNIFLFmbr1B1sBg1T1Cw1%2FU68gUOFhtDN3gwvN%2Be7sPgkuVoYuJsviUnjPNL2%2BJAoHXAIxIDeTnOoxrKLG1ZTKWitwyUMFF91dBVWOt76LaJ41Q1C95sU%2BKLduWqmQKq4htAtJnvd4kTbQYgGME7ef0e9JTKswYbatrHJtsBbyZMwEEoPhri3zk%2BCCxaG9ff00pDUFeyQ%2FM1jfZsVPE7NgZOzDKKGk%2B%2FIkYFG8CP4dGFtGAJIgpcDitdSGR9fZpFJFW%2B2835099WubrItFPdeJodJk%2BmMf0JaA6EfXg%3D%3D; expires=Sun, 29-Mar-2026 03:36:56 GMT; Max-Age=31536000; path=/; domain=.archive.org; HttpOnly" >> ~/.config/internetarchive/ia.ini
           echo "" >> ~/.config/internetarchive/ia.ini
           echo "[general]" >> ~/.config/internetarchive/ia.ini
-          echo "screenname = dripzurek" >> ~/.config/internetarchive/ia.ini
+          echo "screenname = dripzurek169" >> ~/.config/internetarchive/ia.ini
 
       - name: Run download and upload for each chunk
         run: python download_script.py output_vods_chunk_${{ matrix.chunk }}.json
