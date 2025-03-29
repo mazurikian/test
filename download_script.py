@@ -38,10 +38,10 @@ def create_metadata(title, url):
         "collection": "opensource_movies"
     }
 
-# Descarga el archivo de video usando ffmpeg, mostrando advertencias y errores.
+# Descarga el archivo de video usando ffmpeg, mostrando solo advertencias y errores.
 def download_video(m3u8_url, filename):
     subprocess.run(
-        ["ffmpeg", "-i", m3u8_url, "-c", "copy", filename],
+        ["ffmpeg", "-loglevel", "warning", "-i", m3u8_url, "-c", "copy", filename],
         check=True
     )
     return True
@@ -78,7 +78,7 @@ def process_video(video):
 
     print(f"ID Video: https://archive.org/details/{identifier}")
     
-    # Descarga el video utilizando ffmpeg; se muestran advertencias y errores en la consola.
+    # Descarga el video utilizando ffmpeg
     download_video(m3u8_url, output_filename)
     print(f"Descarga completada: {output_filename}")
     
