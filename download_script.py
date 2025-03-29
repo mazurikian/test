@@ -7,11 +7,9 @@ from datetime import datetime
 from internetarchive import upload, Item
 
 def sanitize_identifier(title):
-    # Convertir a minúsculas y reemplazar espacios con guiones
+    # Convertir a minúsculas, reemplazar espacios por guiones y eliminar caracteres especiales
     identifier = title.lower()
-    # Eliminar caracteres especiales excepto guiones
     identifier = re.sub(r'[^a-z0-9-]', '', identifier)
-    # Limitar longitud a 80 caracteres
     return identifier[:80]
 
 def generate_metadata(title):
@@ -31,6 +29,7 @@ def download_vod(m3u8_url, output_filename):
             'ffmpeg',
             '-i', m3u8_url,
             '-c', 'copy',
+            '-f', 'mpegts',  # Forzar salida en formato transport stream (.ts)
             output_filename
         ]
         subprocess.run(command, check=True)
@@ -64,17 +63,17 @@ def main():
             print("VOD sin título o URL, omitiendo...")
             continue
         
-        # Generar campos automáticamente
-        identifier = f"vector-twitch-{sanitize_identifier(title)}-{datetime.now().strftime('%Y%m%d')}"
+        # Generar el identificador y la metadata
+        identifier = f"twitch-{sanitize_identifier(title)}-{datetime.now().strftime('%Y%m%d')}"
         metadata = generate_metadata(title)
         
         safe_title = "".join(c for c in title if c.isalnum() or c in (' ', '-', '_')).rstrip()
-        output_filename = f"downloads/{safe_title}.ts"  # Cambiado a .mp4 para mejor compatibilidad
+        output_filename = f"downloads/{safe_title}.ts"  # Utilizamos .ts para descarga sin conversión
         
         print(f"\nProcesando: {title}")
         print(f"Identifier: {identifier}")
         
-        # Obtener URL real con yt-dlp
+        # Obtener URL real del stream con yt-dlp
         print("Obteniendo URL del stream...")
         try:
             get_url_cmd = ['yt-dlp', '-g', '-f', 'best', url]
@@ -85,7 +84,7 @@ def main():
             print(f"Error al obtener URL: {e.stderr if e.stderr else 'Error desconocido'}")
             continue
         
-        # Descargar con FFmpeg
+        # Descargar VOD sin conversión y con extensión .ts
         if download_vod(m3u8_url, output_filename):
             print("Descarga completada. Subiendo a Internet Archive...")
             try:
