@@ -1,127 +1,110 @@
 import json
 import os
-import subprocess
 import re
+import subprocess
 import sys
-from datetime import datetime
-from internetarchive import upload, Item
+import requests
+import unicodedata
+from internetarchive import upload
 
+# Elimina acentos y caracteres especiales del texto.
+def normalize_text(text):
+    return unicodedata.normalize('NFKD', text).encode('ascii', 'ignore').decode('ascii')
 
-def sanitize_identifier(title):
-    """
-    Convierte el título a minúsculas, reemplaza espacios por guiones y elimina caracteres especiales.
-    """
-    identifier = title.lower()
-    identifier = re.sub(r'[^a-z0-9-]', '', identifier)
-    return identifier[:80]
+# Crea un identificador a partir del título.
+def create_identifier(title):
+    text = normalize_text(title).lower()
+    text = re.sub(r'[^a-z0-9\s-]', '', text)
+    identifier = re.sub(r'\s+', '-', text)
+    return identifier
 
+# Busca en la página la fecha de subida (uploadDate)
+def get_upload_date(url):
+    try:
+        response = requests.get(url)
+        if response.status_code == 200:
+            match = re.search(r'"uploadDate"\s*:\s*"([^"]+)"', response.text)
+            if match:
+                return match.group(1)
+    except Exception as e:
+        print("Error al obtener la fecha de subida desde", url, ":", e)
+    return None
 
-def generate_metadata(title):
-    """
-    Genera un diccionario de metadata basado en el título proporcionado.
-    """
+# Genera un diccionario de metadatos usando el título y la URL.
+def create_metadata(title, url):
     return {
         "title": title,
         "mediatype": "movies",
-        "collection": "opensource",
-        "subject": "twitch;streaming;gameplay",
-        "date": datetime.now().strftime("%Y-%m-%d"),
-        "language": "Spanish",
-        "description": f"VOD de Twitch: {title}",
+        "collection": "opensource_movies"
     }
 
+# Descarga el archivo de video usando ffmpeg, mostrando advertencias y errores.
+def download_video(m3u8_url, filename):
+    subprocess.run(
+        ["ffmpeg", "-hide_banner", "-loglevel", "warning", "-i", m3u8_url, "-c", "copy", filename],
+        check=True
+    )
+    return True
 
-def download_vod(m3u8_url, output_filename):
-    """
-    Descarga el VOD usando FFmpeg y lo guarda en el archivo especificado.
-    Se fuerza la salida en formato transport stream (.ts).
-    """
-    try:
-        command = [
-            "ffmpeg",
-            "-i", m3u8_url,
-            "-c", "copy",
-            "-f", "mpegts",  # Forzar salida en formato transport stream (.ts)
-            output_filename,
-        ]
-        subprocess.run(command, check=True)
-        return True
-    except subprocess.CalledProcessError as e:
-        error_msg = (
-            e.stderr.decode("utf-8") if e.stderr else "Error desconocido"
-        )
-        print(f"Error en FFmpeg: {error_msg}")
-        return False
+# Obtiene la URL directa del stream usando yt-dlp.
+def get_stream_url(url):
+    result = subprocess.run(
+        ["yt-dlp", "-g", "-f", "best", url],
+        capture_output=True,
+        text=True,
+        check=True
+    )
+    return result.stdout.strip()
 
+# Procesa cada video (VOD) con la información provista.
+def process_video(video):
+    title = video.get("title")
+    url = video.get("url")
+    if not title or not url:
+        return
 
+    output_filename = title + ".ts"
+    # Agrega el prefijo "twitch-" al identificador del título.
+    identifier = "twitch-" + create_identifier(title)
+    
+    # Intenta obtener la fecha de subida y la incorpora al identificador.
+    upload_date = get_upload_date(url)
+    if upload_date:
+        safe_date = upload_date.replace(":", "_")
+        identifier = identifier + "-" + safe_date
+
+    metadata = create_metadata(title, url)
+    m3u8_url = get_stream_url(url)
+    
+    # Descarga el video utilizando ffmpeg; se muestran advertencias y errores en la consola.
+    download_video(m3u8_url, output_filename)
+    
+    # Sube el video a Internet Archive de manera silenciosa.
+    upload_result = upload(
+        identifier,
+        files=[output_filename],
+        metadata=metadata,
+        retries=5,
+        verbose=False  # No muestra mensajes durante la subida
+    )
+    
+    # Una vez subido, se muestra en pantalla el enlace de los detalles.
+    print(f"Video subido correctamente: https://archive.org/details/{identifier}")
+    
+    # Elimina el archivo descargado localmente.
+    os.remove(output_filename)
+
+# Función principal que carga la lista de videos y los procesa.
 def main():
     if len(sys.argv) < 2:
-        print("Uso: python script.py <archivo_vods.json>")
-        sys.exit(1)
-
-    json_filename = sys.argv[1]
-    try:
-        with open(json_filename, "r", encoding="utf-8") as f:
-            vods = json.load(f)
-    except FileNotFoundError:
-        print(f"Archivo '{json_filename}' no encontrado.")
-        sys.exit(1)
-    except json.JSONDecodeError:
-        print(f"El archivo '{json_filename}' no contiene un JSON válido.")
-        sys.exit(1)
-
-    os.makedirs("downloads", exist_ok=True)
-
-    for vod in vods:
-        title = vod.get("title")
-        url = vod.get("url")
-        if not title or not url:
-            print("VOD sin título o URL, omitiendo...")
-            continue
-
-        # Generar el identificador y la metadata
-        identifier = (
-            f"twitch-{sanitize_identifier(title)}-{datetime.now().strftime('%Y%m%d')}"
-        )
-        metadata = generate_metadata(title)
-
-        safe_title = "".join(c for c in title if c.isalnum() or c in (" ", "-", "_")).rstrip()
-        output_filename = f"downloads/{safe_title}.ts"  # Utilizamos .ts para descarga sin conversión
-
-        print(f"\nProcesando: {title}")
-        print(f"Identifier: {identifier}")
-
-        # Obtener URL real del stream con yt-dlp
-        print("Obteniendo URL del stream...")
-        try:
-            get_url_cmd = ["yt-dlp", "-g", "-f", "best", url]
-            result = subprocess.run(get_url_cmd, capture_output=True, text=True, check=True)
-            m3u8_url = result.stdout.strip()
-            print("URL real obtenida")
-        except subprocess.CalledProcessError as e:
-            error_msg = e.stderr if e.stderr else "Error desconocido"
-            print(f"Error al obtener URL: {error_msg}")
-            continue
-
-        # Descargar VOD sin conversión y con extensión .ts
-        if download_vod(m3u8_url, output_filename):
-            print("Descarga completada. Subiendo a Internet Archive...")
-            try:
-                item = upload(
-                    identifier,
-                    files=[output_filename],
-                    metadata=metadata,
-                    retries=5,
-                    verbose=True,
-                )
-                print(f"Subida exitosa: https://archive.org/details/{identifier}")
-                os.remove(output_filename)
-                print("Archivo local eliminado")
-            except Exception as e:
-                print(f"Error al subir a Internet Archive: {str(e)}")
-        else:
-            print("Error en la descarga, omitiendo subida")
-
+        sys.exit("Uso: script.py <archivo_json>")
+    
+    json_file = sys.argv[1]
+    with open(json_file, "r", encoding="utf-8") as f:
+        videos = json.load(f)
+    
+    for video in reversed(videos):
+        process_video(video)
 
 if __name__ == "__main__":
     main()
