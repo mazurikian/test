@@ -66,8 +66,8 @@ def get_upload_date(url):
     # Fallback: Si no se encuentra, se utiliza la fecha/hora actual
     return datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
 
-# Genera un diccionario de metadatos usando el título y la URL.
-def create_metadata(title, url):
+# Genera un diccionario de metadatos usando el título, la URL y la fecha (la fecha se muestra de manera cruda).
+def create_metadata(title, url, upload_date):
     return {
         "title": title,
         "description": f"{title}\n{url}\n{upload_date}",
@@ -102,14 +102,16 @@ def process_video(video):
 
     # Se descarga siempre el archivo como "output.ts"
     temp_filename = "output.ts"
-    base_identifier = "jjjijoooootwitch-" + create_identifier(title)
+    base_identifier = "jijoooootwitch-" + create_identifier(title)
     
     # Se obtiene la fecha de subida y se la formatea para integrarla en el identificador.
+    # La variable "upload_date" contiene la fecha de manera cruda
     upload_date = get_upload_date(url)
-    safe_date = upload_date.replace(":", "_")
+    safe_date = upload_date.replace(":", "_")  # Para que sea seguro en la URL/identificador
     identifier = f"{base_identifier}-{safe_date}"
     
-    metadata = create_metadata(title, url)
+    # Se crea la metadata incluyendo el título, la URL y la fecha original "cruda"
+    metadata = create_metadata(title, url, upload_date)
     m3u8_url = get_stream_url(url)
 
     print(f"ID Video: https://archive.org/details/{identifier}")
