@@ -22,9 +22,9 @@ jobs:
 
       - name: Install dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install -y ffmpeg
-          pip install yt-dlp internetarchive
+          sudo apt update
+          sudo apt install ffmpeg
+          pip install internetarchive yt-dlp
 
       - name: Create/modify ia.ini file
         run: |
