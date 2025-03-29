@@ -71,7 +71,7 @@ def create_metadata(title, url):
 # Descarga el archivo de video usando ffmpeg, mostrando solo advertencias y errores.
 def download_video(m3u8_url, filename):
     subprocess.run(
-        ["ffmpeg", "-loglevel", "warning", "-i", m3u8_url, "-c", "copy", filename],
+        ["ffmpeg", "-i", m3u8_url, "-c", "copy", filename],
         check=True
     )
     return True
