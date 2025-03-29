@@ -70,6 +70,7 @@ def get_upload_date(url):
 def create_metadata(title, url):
     return {
         "title": title,
+        "description": f"{title}\n{url}\n{upload_date}",
         "mediatype": "movies",
         "collection": "opensource_movies"
     }
