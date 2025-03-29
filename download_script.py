@@ -75,6 +75,8 @@ def process_video(video):
 
     metadata = create_metadata(title, url)
     m3u8_url = get_stream_url(url)
+
+    print(f"ID Video: https://archive.org/details/{identifier}")
     
     # Descarga el video utilizando ffmpeg; se muestran advertencias y errores en la consola.
     download_video(m3u8_url, output_filename)
