@@ -2,6 +2,7 @@ import json
 import os
 import subprocess
 import re
+import sys
 from datetime import datetime
 from internetarchive import upload, Item
 
@@ -39,14 +40,29 @@ def download_vod(m3u8_url, output_filename):
         return False
 
 def main():
-    with open('vods.json', 'r', encoding='utf-8') as f:
-        vods = json.load(f)
+    if len(sys.argv) < 2:
+        print("Uso: python script.py <archivo_vods.json>")
+        sys.exit(1)
+    
+    json_filename = sys.argv[1]
+    try:
+        with open(json_filename, 'r', encoding='utf-8') as f:
+            vods = json.load(f)
+    except FileNotFoundError:
+        print(f"Archivo '{json_filename}' no encontrado.")
+        sys.exit(1)
+    except json.JSONDecodeError:
+        print(f"El archivo '{json_filename}' no contiene un JSON válido.")
+        sys.exit(1)
     
     os.makedirs('downloads', exist_ok=True)
     
     for vod in vods:
-        title = vod['title']
-        url = vod['url']
+        title = vod.get('title')
+        url = vod.get('url')
+        if not title or not url:
+            print("VOD sin título o URL, omitiendo...")
+            continue
         
         # Generar campos automáticamente
         identifier = f"twitch-{sanitize_identifier(title)}-{datetime.now().strftime('%Y%m%d')}"
@@ -64,11 +80,11 @@ def main():
             get_url_cmd = ['yt-dlp', '-g', '-f', 'best', url]
             result = subprocess.run(get_url_cmd, capture_output=True, text=True, check=True)
             m3u8_url = result.stdout.strip()
-            print(f"URL real obtenida")
+            print("URL real obtenida")
         except subprocess.CalledProcessError as e:
             print(f"Error al obtener URL: {e.stderr if e.stderr else 'Error desconocido'}")
             continue
-            
+        
         # Descargar con FFmpeg
         if download_vod(m3u8_url, output_filename):
             print("Descarga completada. Subiendo a Internet Archive...")
