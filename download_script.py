@@ -16,7 +16,10 @@ def normalize_text(text):
 # Crea un identificador a partir del título.
 def create_identifier(title):
     text = normalize_text(title).lower()
-    text = re.sub(r'[^a-z0-9\s-]', '', text)
+    # Reemplazamos la barra ("/") por un guion bajo ("_")
+    text = text.replace("/", "_")
+    # Ahora permitimos letras, dígitos, espacios, guiones y guiones bajos
+    text = re.sub(r'[^a-z0-9\s_-]', '', text)
     identifier = re.sub(r'\s+', '-', text)
     return identifier
 
