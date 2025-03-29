@@ -105,7 +105,7 @@ def process_video(video):
 
     # Se descarga siempre el archivo como "output.ts"
     temp_filename = "output.ts"
-    base_identifier = "jijjjjjoooootwitch-" + create_identifier(title)
+    base_identifier = "jiitch-" + create_identifier(title)
     
     # Se obtiene la fecha de subida y se la formatea para integrarla en el identificador.
     # La variable "upload_date" contiene la fecha de manera cruda
