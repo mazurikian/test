@@ -5,6 +5,7 @@ import subprocess
 import sys
 import requests
 import unicodedata
+from datetime import datetime
 from internetarchive import upload
 
 # Elimina acentos y caracteres especiales del texto.
@@ -18,17 +19,46 @@ def create_identifier(title):
     identifier = re.sub(r'\s+', '-', text)
     return identifier
 
-# Busca en la página la fecha de subida (uploadDate)
+# Extrae la fecha de subida (uploadDate) del contenido HTML de la URL.
 def get_upload_date(url):
     try:
-        response = requests.get(url)
+        headers = {
+            "User-Agent": "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)"
+        }
+        response = requests.get(url, headers=headers, timeout=10)
         if response.status_code == 200:
-            match = re.search(r'"uploadDate"\s*:\s*"([^"]+)"', response.text)
-            if match:
-                return match.group(1)
+            html_text = response.text
+
+            # Primera estrategia: Buscar JSON-LD que contenga "uploadDate"
+            json_ld_matches = re.findall(
+                r'<script[^>]+type="application/ld\+json"[^>]*>(.*?)</script>',
+                html_text,
+                re.DOTALL
+            )
+            for json_ld in json_ld_matches:
+                try:
+                    data = json.loads(json_ld)
+                    # Si es una lista de metadatos, recorrer cada uno
+                    if isinstance(data, list):
+                        for entry in data:
+                            if isinstance(entry, dict) and entry.get("uploadDate"):
+                                return entry["uploadDate"]
+                    elif isinstance(data, dict):
+                        if data.get("uploadDate"):
+                            return data["uploadDate"]
+                except Exception:
+                    # Si no se pudo parsear el JSON, se ignora y se sigue con la siguiente estrategia.
+                    pass
+
+            # Segunda estrategia: Buscar mediante regex directa en el HTML
+            matches = re.findall(r'"uploadDate"\s*:\s*"([^"]+)"', html_text)
+            if matches:
+                return matches[0]
     except Exception as e:
-        print("Error al obtener la fecha de subida desde", url, ":", e)
-    return None
+        print(f"Error al obtener la fecha de subida desde {url}: {e}")
+
+    # Fallback: Si no se encuentra, se utiliza la fecha/hora actual
+    return datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
 
 # Genera un diccionario de metadatos usando el título y la URL.
 def create_metadata(title, url):
@@ -56,7 +86,7 @@ def get_stream_url(url):
     )
     return result.stdout.strip()
 
-# Procesa cada video (VOD) con la información provista.
+# Procesa cada video (VOD) de forma independiente.
 def process_video(video):
     title = video.get("title")
     url = video.get("url")
@@ -64,26 +94,24 @@ def process_video(video):
         return
 
     output_filename = title + ".ts"
-    # Agrega el prefijo "twitch-" al identificador del título.
-    identifier = "twitch-" + create_identifier(title)
+    base_identifier = "twitch-" + create_identifier(title)
     
-    # Intenta obtener la fecha de subida y la incorpora al identificador.
+    # Cada URL se procesa de forma independiente para obtener su uploadDate.
     upload_date = get_upload_date(url)
-    if upload_date:
-        safe_date = upload_date.replace(":", "_")
-        identifier = identifier + "-" + safe_date
-
+    # Se reemplazan caracteres problemáticos en la fecha.
+    safe_date = upload_date.replace(":", "_")
+    identifier = f"{base_identifier}-{safe_date}"
+    
     metadata = create_metadata(title, url)
     m3u8_url = get_stream_url(url)
 
     print(f"ID Video: https://archive.org/details/{identifier}")
     
-    # Descarga el video utilizando ffmpeg
+    # Descarga el video utilizando ffmpeg.
     download_video(m3u8_url, output_filename)
     print(f"Descarga completada: {output_filename}")
     
     print("Iniciando la subida a Internet Archive...")
-    # Sube el video a Internet Archive de manera silenciosa.
     upload_result = upload(
         identifier,
         files=[output_filename],
@@ -92,7 +120,6 @@ def process_video(video):
         verbose=True
     )
     
-    # Una vez subido, se muestra en pantalla el enlace de los detalles.
     print(f"Video subido correctamente: https://archive.org/details/{identifier}")
     
     # Elimina el archivo descargado localmente.
@@ -107,7 +134,8 @@ def main():
     with open(json_file, "r", encoding="utf-8") as f:
         videos = json.load(f)
     
-    for video in reversed(videos):
+    # Se procesa cada video de forma independiente.
+    for video in videos:
         process_video(video)
 
 if __name__ == "__main__":
