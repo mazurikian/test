@@ -1,0 +1,47 @@
+name: Download and Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      download_url:
+        description: "Download URL"
+        default: "https://storage.googleapis.com/google-code-archive-downloads/v2/code.google.com/jquery-speedtest/100MB.txt"
+        required: true
+        type: string
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Prepare environment
+        run: |
+          sudo apt update
+          sudo apt install internetarchive
+          sudo mkdir -p /mnt/workspace
+          sudo chown $USER:$USER /mnt/workspace
+
+      - name: Download file
+        working-directory: /mnt/workspace
+        run: |
+          wget --no-check-certificate --content-disposition "${{ github.event.inputs.download_url }}"
+
+      - name: Get file name
+        working-directory: /mnt/workspace
+        run: |
+          FILE_NAME=$(ls)
+          echo "FILE_NAME=$FILE_NAME" >> "$GITHUB_ENV"
+      
+      - name: Configurar credenciales de Internet Archive
+        run: |
+          ia configure --access-key "ocGTpZVQQrhQvtXU" --secret-key "jDRRY0sU2lm0gAfl"
+
+      - name: Subir archivo a Internet Archive
+        working-directory: /mnt/workspace
+        run: |
+          # Se obtiene la fecha actual en formato YYYYMMDD
+          DATE=$(date +'%Y%m%d')
+          # Se construye el identificador combinando el nombre del archivo y la fecha actual
+          IDENTIFIER="${FILE_NAME}-${DATE}"
+          # Subida del archivo con el título igual al nombre del archivo y asignación a la colección opensource_media
+          ia upload "$IDENTIFIER" "$FILE_NAME" --metadata="title=$FILE_NAME" --metadata="collection=opensource_media"
