@@ -34,7 +34,7 @@ jobs:
       
       - name: Configurar credenciales de Internet Archive
         run: |
-          ia configure --access-key "ocGTpZVQQrhQvtXU" --secret-key "jDRRY0sU2lm0gAfl"
+          ia configure --username "dripzurek169" --password "@Dripzurek"
 
       - name: Subir archivo a Internet Archive
         working-directory: /mnt/workspace
