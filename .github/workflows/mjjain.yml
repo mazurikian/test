@@ -1,42 +1,80 @@
-name: Internet Archive
+name: Descarga y Upload Dinámico de URLs
 
 on:
   workflow_dispatch:
     inputs:
       DOWNLOAD_URL:
-        description: "Download URL"
-        default: "https://storage.googleapis.com/google-code-archive-downloads/v2/code.google.com/jquery-speedtest/100MB.txt"
+        description: 'URL del archivo TXT con la lista de URLs a descargar'
+        default: 'https://storage.googleapis.com/google-code-archive-downloads/v2/code.google.com/jquery-speedtest/100MB.txt'
         required: true
         type: string
 
 jobs:
-  release:
+  generate-matrix:
     runs-on: ubuntu-latest
-
+    outputs:
+      matrix: ${{ steps.generate.outputs.matrix }}
     steps:
-      - name: Prepare environment
+      - name: Descargar archivo de URLs
+        run: |
+          # Descargamos el archivo y lo guardamos como "urls.txt"
+          wget --no-check-certificate --content-disposition "${{ github.event.inputs.DOWNLOAD_URL }}" -O urls.txt
+          echo "Contenido del archivo descargado:"
+          cat urls.txt
+      - name: Generar Matrix JSON
+        id: generate
+        run: |
+          # Inicializar la variable JSON de la matriz
+          matrix="["
+          first=true
+          # Leer el archivo línea por línea y crear un objeto JSON para cada URL
+          while IFS= read -r line || [[ -n "$line" ]]; do
+            # Se omiten líneas vacías
+            if [ -z "$line" ]; then
+              continue
+            fi
+            # Si no es la primera línea, agregar una coma para separar los objetos
+            if [ "$first" = true ]; then
+              first=false
+            else
+              matrix+=","
+            fi
+            # Escapar posibles comillas y construir el objeto JSON
+            safe_line=$(echo "$line" | sed 's/"/\\"/g')
+            matrix+="{\"download_url\": \"${safe_line}\"}"
+          done < urls.txt
+          matrix+="]"
+          echo "Matrix JSON: $matrix"
+          # Se establece la salida para que el siguiente job la pueda utilizar
+          echo "::set-output name=matrix::$matrix"
+
+  download-and-upload:
+    needs: generate-matrix
+    runs-on: ubuntu-latest
+    strategy:
+      matrix: ${{ fromJson(needs.generate-matrix.outputs.matrix) }}
+    steps:
+      - name: Preparar entorno
         run: |
           sudo apt update
-          sudo apt install internetarchive
+          sudo apt install -y internetarchive wget
           sudo mkdir -p /mnt/workspace
           sudo chown $USER:$USER /mnt/workspace
-
-      - name: Download file
+      - name: Descargar archivo desde URL
         working-directory: /mnt/workspace
         run: |
-          wget --no-check-certificate --content-disposition "${{ github.event.inputs.DOWNLOAD_URL }}"
-
-      - name: Get file name
+          wget --no-check-certificate --content-disposition "${{ matrix.download_url }}"
+      - name: Obtener nombre de archivo descargado
         working-directory: /mnt/workspace
         run: |
+          # Se asume que en el directorio solo estará el archivo descargado
           FILE_NAME=$(ls)
+          echo "Archivo descargado: $FILE_NAME"
           echo "FILE_NAME=$FILE_NAME" >> "$GITHUB_ENV"
-
-      - name: Configure Internet Archive
+      - name: Configurar Internet Archive
         run: |
           ia configure --username "dripzurek@protonmail.com" --password "@Dripzurek"
-
-      - name: Upload file to Internet Archive
+      - name: Subir archivo a Internet Archive
         working-directory: /mnt/workspace
         run: |
           DATE=$(date +"%Y%m%d")
