@@ -16,9 +16,9 @@ def normalize_text(text):
 # Crea un identificador a partir del título.
 def create_identifier(title):
     text = normalize_text(title).lower()
-    # Reemplazamos la barra ("/") por un guion bajo ("_")
+    # Reemplaza la barra "/" por un guion bajo "_"
     text = text.replace("/", "_")
-    # Ahora permitimos letras, dígitos, espacios, guiones y guiones bajos
+    # Permite letras, dígitos, espacios, guiones y guiones bajos
     text = re.sub(r'[^a-z0-9\s_-]', '', text)
     identifier = re.sub(r'\s+', '-', text)
     return identifier
@@ -27,10 +27,10 @@ def create_identifier(title):
 def sanitize_filename(filename):
     # Reemplaza el slash "/" por DIVISION SLASH "∕" (U+2215)
     filename = filename.replace("/", "∕")
-    # Reemplaza otros caracteres prohibidos en nombres de archivo: \ : * ? " < > |
+    # Reemplaza otros caracteres prohibidos: \ : * ? " < > |
     return re.sub(r'[\\:*?"<>|]', "_", filename)
 
-# Extrae la fecha de subida (uploadDate) del contenido HTML de la URL.
+# Extrae la fecha de subida (uploadDate) desde el contenido HTML de la URL.
 def get_upload_date(url):
     try:
         headers = {
@@ -40,7 +40,7 @@ def get_upload_date(url):
         if response.status_code == 200:
             html_text = response.text
 
-            # Primera estrategia: Buscar JSON-LD que contenga "uploadDate"
+            # Estrategia 1: Buscar JSON-LD que contenga "uploadDate"
             json_ld_matches = re.findall(
                 r'<script[^>]+type="application/ld\+json"[^>]*>(.*?)</script>',
                 html_text,
@@ -59,17 +59,17 @@ def get_upload_date(url):
                 except Exception:
                     pass
 
-            # Segunda estrategia: Buscar mediante regex directa en el HTML
+            # Estrategia 2: Buscar "uploadDate" mediante regex
             matches = re.findall(r'"uploadDate"\s*:\s*"([^"]+)"', html_text)
             if matches:
                 return matches[0]
     except Exception as e:
         print(f"Error al obtener la fecha de subida desde {url}: {e}")
 
-    # Fallback: Si no se encuentra, se utiliza la fecha/hora actual
+    # Fallback: Se utiliza la fecha/hora actual
     return datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
 
-# Genera un diccionario de metadatos usando el título, la URL y la fecha (la fecha se muestra de manera cruda).
+# Genera el diccionario de metadatos.
 def create_metadata(title, url, upload_date):
     return {
         "title": title,
@@ -78,7 +78,25 @@ def create_metadata(title, url, upload_date):
         "collection": "opensource_movies"
     }
 
-# Descarga el archivo de video usando ffmpeg, mostrando solo advertencias y errores.
+# Función para crear un identificador "bucket" válido.
+def create_bucket_identifier(prefix, title, upload_date):
+    # Genera el "slug" con el título
+    slug = create_identifier(title)
+    # Asegura que la fecha no contenga caracteres no permitidos
+    safe_date = upload_date.replace(":", "_")
+    safe_prefix = prefix  # Por ejemplo: "vector_twitch"
+    # Usamos el formato: prefix - slug - safe_date
+    # Calculamos la longitud fija: prefijo + 2 guiones + safe_date
+    fixed_len = len(safe_prefix) + len(safe_date) + 2
+    # La longitud máxima permitida es 101 caracteres
+    max_slug_len = 101 - fixed_len
+    # Trunca el slug si es necesario
+    if len(slug) > max_slug_len:
+        slug = slug[:max_slug_len]
+    identifier = f"{safe_prefix}-{slug}-{safe_date}"
+    return identifier
+
+# Descarga el archivo de video usando ffmpeg.
 def download_video(m3u8_url, filename):
     subprocess.run(
         ["ffmpeg", "-i", m3u8_url, "-c", "copy", filename],
@@ -96,34 +114,32 @@ def get_stream_url(url):
     )
     return result.stdout.strip()
 
-# Procesa cada video (VOD) de forma independiente.
+# Procesa cada video individualmente.
 def process_video(video):
     title = video.get("title")
     url   = video.get("url")
     if not title or not url:
         return
 
-    # Se descarga siempre el archivo como "output.ts"
+    # Nombre temporal para la descarga
     temp_filename = "output.ts"
-    base_identifier = "vector_twitch" + create_identifier(title)
     
-    # Se obtiene la fecha de subida y se la formatea para integrarla en el identificador.
-    # La variable "upload_date" contiene la fecha de manera cruda
+    # Se extrae la fecha de subida.
     upload_date = get_upload_date(url)
-    safe_date = upload_date.replace(":", "_")  # Para que sea seguro en la URL/identificador
-    identifier = f"{base_identifier}-{safe_date}"
+    # Se crea un identificador que cumple las restricciones del bucket.
+    identifier = create_bucket_identifier("vector_twitch", title, upload_date)
     
-    # Se crea la metadata incluyendo el título, la URL y la fecha original "cruda"
+    # Se crea la metadata con título, URL y fecha.
     metadata = create_metadata(title, url, upload_date)
     m3u8_url = get_stream_url(url)
 
     print(f"ID Video: https://archive.org/details/{identifier}")
     
-    # Descarga el video utilizando ffmpeg con nombre temporal "output.ts"
+    # Descarga el video (se guarda en output.ts)
     download_video(m3u8_url, temp_filename)
     print(f"Descarga completada: {temp_filename}")
     
-    # Genera el nombre final usando una versión sanitizada del título y la extensión .ts
+    # Renombra el archivo según el título sanitizado
     new_filename = sanitize_filename(title) + ".ts"
     try:
         os.rename(temp_filename, new_filename)
@@ -146,7 +162,7 @@ def process_video(video):
     # Elimina el archivo descargado localmente.
     os.remove(new_filename)
 
-# Función principal que carga la lista de videos y los procesa en orden inverso.
+# Función principal: procesa la lista de videos en orden inverso.
 def main():
     if len(sys.argv) < 2:
         sys.exit("Uso: script.py <archivo_json>")
@@ -155,7 +171,6 @@ def main():
     with open(json_file, "r", encoding="utf-8") as f:
         videos = json.load(f)
     
-    # Procesa cada video en orden inverso
     for video in reversed(videos):
         process_video(video)
 
