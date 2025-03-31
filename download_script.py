@@ -99,7 +99,7 @@ def create_bucket_identifier(prefix, title, upload_date):
 # Descarga el archivo de video usando ffmpeg.
 def download_video(m3u8_url, filename):
     subprocess.run(
-        ["ffmpeg", "-hide_banner" "-loglevel" "error" "-i", m3u8_url, "-c", "copy", filename],
+        ["ffmpeg", "-hide_banner", "-loglevel", "error", "-i", m3u8_url, "-c", "copy", filename],
         check=True
     )
     return True
