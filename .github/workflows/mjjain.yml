@@ -44,4 +44,4 @@ jobs:
           # Se construye el identificador combinando el nombre del archivo y la fecha actual
           IDENTIFIER="${FILE_NAME}-${DATE}"
           # Subida del archivo con el título igual al nombre del archivo y asignación a la colección opensource_media
-          ia upload "$IDENTIFIER" "$FILE_NAME" --metadata="title=$FILE_NAME" --metadata="collection=opensource_media"
+          ia upload "$IDENTIFIER" "$FILE_NAME" --metadata="title:$FILE_NAME" --metadata="collection:opensource_media"
