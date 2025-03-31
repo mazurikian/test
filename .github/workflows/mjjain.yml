@@ -1,9 +1,9 @@
-name: Download and Release
+name: Internet Archive
 
 on:
   workflow_dispatch:
     inputs:
-      download_url:
+      DOWNLOAD_URL:
         description: "Download URL"
         default: "https://storage.googleapis.com/google-code-archive-downloads/v2/code.google.com/jquery-speedtest/100MB.txt"
         required: true
@@ -24,30 +24,22 @@ jobs:
       - name: Download file
         working-directory: /mnt/workspace
         run: |
-          wget --no-check-certificate --content-disposition "${{ github.event.inputs.download_url }}"
+          wget --no-check-certificate --content-disposition "${{ github.event.inputs.DOWNLOAD_URL }}"
 
       - name: Get file name
         working-directory: /mnt/workspace
         run: |
           FILE_NAME=$(ls)
           echo "FILE_NAME=$FILE_NAME" >> "$GITHUB_ENV"
-      
-      - name: Configurar credenciales de Internet Archive
+
+      - name: Configure Internet Archive
         run: |
           ia configure --username "dripzurek@protonmail.com" --password "@Dripzurek"
 
-      - name: Subir archivo a Internet Archive
+      - name: Upload file to Internet Archive
         working-directory: /mnt/workspace
         run: |
-          # Se obtiene la fecha actual en formato YYYYMMDD
-          DATE=$(date +'%Y%m%d')
-          # Se crea un identificador seguro a partir del nombre del archivo:
-          # 1. Convertir a minúsculas.
-          # 2. Reemplazar cualquier carácter que no sea alfanumérico, punto, guion bajo o guion por un guion.
-          # 3. Remover guiones, puntos o guiones bajos al inicio.
-          SAFE_IDENTIFIER=$(echo "$FILE_NAME" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9._-]+/-/g' | sed -E 's/^[._-]+//')
-          # Se construye el identificador final agregándole la fecha.
+          DATE=$(date +"%Y%m%d")
+          SAFE_IDENTIFIER=$(echo "$FILE_NAME" | tr "[:upper:]" "[:lower:]" | sed -E "s/[^a-z0-9._-]+/-/g" | sed -E "s/^[._-]+//")
           IDENTIFIER="${SAFE_IDENTIFIER}-${DATE}"
-          echo "Identifier generado: $IDENTIFIER"
-          # Subida del archivo con el título igual al nombre original y asignación a la colección opensource_media.
-          ia upload "$IDENTIFIER" "$FILE_NAME" --metadata="title:$FILE_NAME" --metadata="collection:opensource_media"
+          ia upload "$IDENTIFIER" "$FILE_NAME" --metadata="title:$FILE_NAME" --metadata="mediatype:data" --metadata="collection:opensource_media"
