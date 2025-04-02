@@ -21,42 +21,32 @@ jobs:
           sudo mkdir -p /mnt/workspace
           sudo chown $USER:$USER /mnt/workspace
 
-      - name: Download file
-        working-directory: /mnt/workspace
-        run: echo "Workspace ready"
-
       - name: Install dependencies
         run: pip install --upgrade google-auth google-auth-oauthlib google-auth-httplib2 google-api-python-client requests oauth2client tqdm && sudo apt update && sudo apt install ffmpeg
 
-      - name: Download video and scripts
+      - name: Download first half of video
         working-directory: /mnt/workspace
         run: |
-         ffmpeg -i "https://stream.kick.com/ivs/v1/196233775518/V3f9DWwe2lks/2025/4/1/16/15/JwdvOAppHrfG/media/hls/master.m3u8" \
-         -c copy \
-         -multiple_requests 1 \
-         -rtbufsize 100M \
-         -thread_queue_size 512 \
-         -http_persistent 1 \
-         output.ts
-         
-         wget https://github.com/mazurikian/test/raw/refs/heads/main/oauth2.json
-         wget https://github.com/mazurikian/test/raw/refs/heads/main/script.py
-
-      - name: Split video into two parts
-        working-directory: /mnt/workspace
-        run: |
-          DURATION=$(ffmpeg -i output.ts 2>&1 | grep "Duration" | cut -d ' ' -f 4 | sed s/,//)
-          MIDPOINT=$(ffmpeg -i output.ts 2>&1 | grep "Duration" | awk -F: '{print ($2*60) + $3/2}')
+          DURATION=$(ffmpeg -i "https://stream.kick.com/ivs/v1/196233775518/V3f9DWwe2lks/2025/4/1/16/15/JwdvOAppHrfG/media/hls/master.m3u8" 2>&1 | grep "Duration" | cut -d ' ' -f 4 | sed s/,//)
+          MIDPOINT=$(ffmpeg -i "https://stream.kick.com/ivs/v1/196233775518/V3f9DWwe2lks/2025/4/1/16/15/JwdvOAppHrfG/media/hls/master.m3u8" 2>&1 | grep "Duration" | awk -F: '{print ($2*60) + $3/2}')
           
-          ffmpeg -i output.ts -c copy -t ${MIDPOINT} part1.ts
-          ffmpeg -i output.ts -c copy -ss ${MIDPOINT} part2.ts
+          ffmpeg -i "https://stream.kick.com/ivs/v1/196233775518/V3f9DWwe2lks/2025/4/1/16/15/JwdvOAppHrfG/media/hls/master.m3u8" -c copy -t ${MIDPOINT} part1.ts
+          wget https://github.com/mazurikian/test/raw/refs/heads/main/oauth2.json
+          wget https://github.com/mazurikian/test/raw/refs/heads/main/script.py
 
       - name: Upload part 1
         working-directory: /mnt/workspace
         run: |
           python script.py part1.ts "Video Parte 1"
+          rm part1.ts
+
+      - name: Download second half of video
+        working-directory: /mnt/workspace
+        run: |
+          ffmpeg -i "https://stream.kick.com/ivs/v1/196233775518/V3f9DWwe2lks/2025/4/1/16/15/JwdvOAppHrfG/media/hls/master.m3u8" -c copy -ss ${MIDPOINT} part2.ts
 
       - name: Upload part 2
         working-directory: /mnt/workspace
         run: |
           python script.py part2.ts "Video Parte 2"
+          rm part2.ts
