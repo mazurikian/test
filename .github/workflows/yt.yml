@@ -21,5 +21,12 @@ jobs:
 
       - name: Run script
         run: |
-         ffmpeg -i "https://stream.kick.com/ivs/v1/196233775518/V3f9DWwe2lks/2025/4/1/16/15/JwdvOAppHrfG/media/hls/master.m3u8" -c copy output.ts
+         ffmpeg -i "https://stream.kick.com/ivs/v1/196233775518/V3f9DWwe2lks/2025/4/1/16/15/JwdvOAppHrfG/media/hls/master.m3u8" \
+         -c copy \
+         -multiple_requests 1 \
+         -rtbufsize 100M \
+         -hls_prefetch 10 \
+         -thread_queue_size 512 \
+         -http_persistent 1 \
+         output.ts
          python script.py
