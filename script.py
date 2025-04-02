@@ -1,14 +1,14 @@
 import os
+import subprocess
 import requests
 import httplib2
 import sys
-import time
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 from oauth2client.client import flow_from_clientsecrets
 from oauth2client.file import Storage
 from oauth2client.tools import run_flow
-from tqdm import tqdm  # Librería para la barra de progreso
+from tqdm import tqdm  # Barra de progreso
 
 # Configuración de la API de YouTube
 CLIENT_SECRETS_FILE = 'client_secrets.json'
@@ -16,28 +16,22 @@ YOUTUBE_READ_WRITE_SCOPE = 'https://www.googleapis.com/auth/youtube.upload'
 YOUTUBE_API_SERVICE_NAME = 'youtube'
 YOUTUBE_API_VERSION = 'v3'
 OAUTH2_STORAGE_FILE = 'oauth2.json'
-VIDEO_URL = "https://archive.org/download/vector_twitcheducando-la-adolfina-con-frankkaster-coscu-y-la-chilena-2018-01-09T21_05_48Z/EDUCANDO%20LA%20ADOLFINA%20CON%20FRANKKASTER%2C%20COSCU%20Y%20LA%20CHILENA.ts"
+M3U8_URL = "https://stream.kick.com/ivs/v1/196233775518/V3f9DWwe2lks/2025/3/31/3/34/LHesGrlEamEZ/media/hls/master.m3u8"
 OUTPUT_FILE = "output.ts"
 
-
-def download_video(url, output_path):
-    """Descarga un archivo desde una URL con barra de progreso."""
-    response = requests.get(url, stream=True)
-    response.raise_for_status()
-    total_size = int(response.headers.get('content-length', 0))
-    
-    with open(output_path, 'wb') as file, tqdm(
-            desc="Descargando",
-            total=total_size,
-            unit='B',
-            unit_scale=True,
-            unit_divisor=1024,
-    ) as bar:
-        for chunk in response.iter_content(chunk_size=8192):
-            file.write(chunk)
-            bar.update(len(chunk))
-    print(f"\nVideo descargado como {output_path}")
-
+def download_m3u8(m3u8_url, output_file):
+    """Descarga el video desde un enlace M3U8 usando ffmpeg."""
+    print("Descargando el video con ffmpeg...")
+    command = [
+        "ffmpeg", "-i", m3u8_url,
+        "-c", "copy", output_file
+    ]
+    result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    if result.returncode == 0:
+        print(f"Video descargado exitosamente como {output_file}")
+    else:
+        print(f"Error al descargar el video: {result.stderr}")
+        sys.exit(1)
 
 def get_authenticated_service():
     """Autentica con la API de YouTube usando OAuth 2.0."""
@@ -51,7 +45,6 @@ def get_authenticated_service():
     if credentials is None or credentials.invalid:
         credentials = run_flow(flow, storage)
     return build(YOUTUBE_API_SERVICE_NAME, YOUTUBE_API_VERSION, http=credentials.authorize(httplib2.Http()))
-
 
 def upload_video(youtube, file_path, title, description, category_id='22', privacy_status='public', made_for_kids=False):
     """Sube un video a YouTube con barra de progreso."""
@@ -83,18 +76,17 @@ def upload_video(youtube, file_path, title, description, category_id='22', priva
     print(f"\nVideo subido con ID: {response['id']}")
     return response['id']
 
-
 if __name__ == '__main__':
     try:
-        # Descargar el video
-        download_video(VIDEO_URL, OUTPUT_FILE)
+        # Descargar el video desde M3U8
+        download_m3u8(M3U8_URL, OUTPUT_FILE)
         
         # Autenticarse en YouTube
         youtube = get_authenticated_service()
         
         # Subir el video a YouTube
-        video_title = 'Educando La Adolfina - Frankkaster, Coscu y La Chilena'
-        video_description = 'Video descargado y subido automáticamente.'
+        video_title = 'Video en vivo desde Kick'
+        video_description = 'Grabación descargada y subida automáticamente.'
         upload_video(youtube, OUTPUT_FILE, video_title, video_description, made_for_kids=False)
     except Exception as e:
         print(f"Ocurrió un error inesperado: {e}", file=sys.stderr)
