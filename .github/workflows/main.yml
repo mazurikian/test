@@ -10,7 +10,7 @@ jobs:
       max-parallel: 1  # Fuerza la ejecución secuencial; si prefieres paralelismo, quita esta línea
       matrix:
         # Se definen los chunks de 34 a 1, asegurando que se ejecute primero el 34
-        chunk: [28]
+        chunk: [27]
     steps:
       - name: Checkout
         uses: actions/checkout@v4.2.2
