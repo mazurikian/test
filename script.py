@@ -6,9 +6,7 @@ from oauth2client.client import flow_from_clientsecrets
 from oauth2client.tools import run_flow
 
 # Descargar el video con ffmpeg
-video_url = "https://stream.kick.com/ivs/v1/196233775518/V3f9DWwe2lks/2025/3/31/3/34/LHesGrlEamEZ/media/hls/master.m3u8"
-output_file = "output.ts"
-os.system(f'ffmpeg -i "{video_url}" -c copy {output_file}')
+os.system('ffmpeg -i "https://stream.kick.com/ivs/v1/196233775518/V3f9DWwe2lks/2025/3/31/3/34/LHesGrlEamEZ/media/hls/master.m3u8" -c copy output.ts')
 
 # Cargar credenciales de YouTube
 storage = Storage("oauth2.json")
@@ -34,7 +32,7 @@ request = youtube.videos().insert(
             "selfDeclaredMadeForKids": False
         }
     },
-    media_body=MediaFileUpload(output_file, mimetype='video/*')
+    media_body=MediaFileUpload("output.ts", mimetype='video/*')
 )
 
 request.execute()
