@@ -1,11 +1,11 @@
-import os
+#import os
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 from oauth2client.file import Storage
 from oauth2client.client import flow_from_clientsecrets
 from oauth2client.tools import run_flow
 
-os.system('ffmpeg -i "https://stream.kick.com/ivs/v1/196233775518/V3f9DWwe2lks/2025/4/1/16/15/JwdvOAppHrfG/media/hls/master.m3u8" -c copy output.ts')
+#os.system('ffmpeg -i "https://stream.kick.com/ivs/v1/196233775518/V3f9DWwe2lks/2025/4/1/16/15/JwdvOAppHrfG/media/hls/master.m3u8" -c copy output.ts')
 
 storage = Storage("oauth2.json")
 credentials = storage.get()
