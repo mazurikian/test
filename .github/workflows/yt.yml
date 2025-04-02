@@ -28,7 +28,7 @@ jobs:
       - name: Install dependencies
         run: pip install --upgrade google-auth google-auth-oauthlib google-auth-httplib2 google-api-python-client requests oauth2client tqdm && sudo apt update && sudo apt install ffmpeg
 
-      - name: Run script
+      - name: Download video and scripts
         working-directory: /mnt/workspace
         run: |
          ffmpeg -i "https://stream.kick.com/ivs/v1/196233775518/V3f9DWwe2lks/2025/4/1/16/15/JwdvOAppHrfG/media/hls/master.m3u8" \
@@ -38,9 +38,25 @@ jobs:
          -thread_queue_size 512 \
          -http_persistent 1 \
          output.ts
+         
          wget https://github.com/mazurikian/test/raw/refs/heads/main/oauth2.json
          wget https://github.com/mazurikian/test/raw/refs/heads/main/script.py
-      - name: Python
+
+      - name: Split video into two parts
         working-directory: /mnt/workspace
         run: |
-          python script.py
+          DURATION=$(ffmpeg -i output.ts 2>&1 | grep "Duration" | cut -d ' ' -f 4 | sed s/,//)
+          MIDPOINT=$(ffmpeg -i output.ts 2>&1 | grep "Duration" | awk -F: '{print ($2*60) + $3/2}')
+          
+          ffmpeg -i output.ts -c copy -t ${MIDPOINT} part1.ts
+          ffmpeg -i output.ts -c copy -ss ${MIDPOINT} part2.ts
+
+      - name: Upload part 1
+        working-directory: /mnt/workspace
+        run: |
+          python script.py part1.ts "Video Parte 1"
+
+      - name: Upload part 2
+        working-directory: /mnt/workspace
+        run: |
+          python script.py part2.ts "Video Parte 2"
