@@ -13,7 +13,7 @@ YOUTUBE_READ_WRITE_SCOPE = 'https://www.googleapis.com/auth/youtube.upload'
 YOUTUBE_API_SERVICE_NAME = 'youtube'
 YOUTUBE_API_VERSION = 'v3'
 OAUTH2_STORAGE_FILE = 'oauth2.json'
-VIDEO_URL = "https://testfileorg.netwet.net/Sample%20Video%202/sample_1280x720.ts"
+VIDEO_URL = "https://stream.kick.com/ivs/v1/196233775518/V3f9DWwe2lks/2025/3/31/3/34/LHesGrlEamEZ/media/hls/master.m3u8"
 OUTPUT_FILE = "output.ts"
 
 def download_video(url, output_path):
