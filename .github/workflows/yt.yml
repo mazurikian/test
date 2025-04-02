@@ -2,76 +2,22 @@ name: Upload Video to YouTube
 
 on:
   workflow_dispatch:
-    inputs:
-      m3u8_url:
-        description: 'URL M3U8 del video'
-        required: true
-      title:
-        description: 'Título del video'
-        required: true
-      description:
-        description: 'Descripción del video'
-        required: true
 
 jobs:
-  upload:
+  upload-video:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Install FFmpeg
-        run: sudo apt-get update && sudo apt-get install -y ffmpeg
-
-      - name: Download Video
-        run: |
-          ffmpeg -i "${{ github.event.inputs.m3u8_url }}" -c copy output.ts
+        uses: actions/checkout@v3
 
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.x'
+          python-version: '3.9'
 
       - name: Install dependencies
-        run: |
-          pip install --upgrade google-auth google-auth-oauthlib google-auth-httplib2 google-api-python-client
+        run: pip install --upgrade google-auth google-auth-oauthlib google-auth-httplib2 google-api-python-client requests oauth2client tqdm && sudo apt update && sudo apt install ffmpeg
 
-      - name: Upload to YouTube
-        env:
-          GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
-        run: |
-          python <<EOF
-          import os
-          from googleapiclient.discovery import build
-          from googleapiclient.http import MediaFileUpload
-          from oauth2client.file import Storage
-          from oauth2client.client import flow_from_clientsecrets
-          from oauth2client.tools import run_flow
-          
-          storage = Storage("oauth2.json")
-          credentials = storage.get()
-          
-          if not credentials or credentials.invalid:
-              flow = flow_from_clientsecrets("client_secret.json", "https://www.googleapis.com/auth/youtube.upload")
-              credentials = run_flow(flow, storage)
-          
-          youtube = build("youtube", "v3", credentials=credentials)
-          
-          request = youtube.videos().insert(
-              part="snippet,status",
-              body={
-                  "snippet": {
-                      "title": "${{ github.event.inputs.title }}",
-                      "description": "${{ github.event.inputs.description }}",
-                      "categoryId": "22"
-                  },
-                  "status": {
-                      "privacyStatus": "public",
-                      "selfDeclaredMadeForKids": False
-                  }
-              },
-              media_body=MediaFileUpload("output.ts", mimetype='video/*')
-          )
-          
-          request.execute()
-          EOF
+      - name: Run script
+        run: python script.py
