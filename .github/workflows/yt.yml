@@ -21,44 +21,27 @@ jobs:
           sudo mkdir -p /mnt/workspace
           sudo chown $USER:$USER /mnt/workspace
 
-      - name: Descargar archivos adicionales
+      - name: Download file
         working-directory: /mnt/workspace
-        run: |
-          wget https://github.com/mazurikian/test/raw/refs/heads/main/oauth2.json
-          wget https://github.com/mazurikian/test/raw/refs/heads/main/script.py
+        run: echo "Workspace ready"
 
       - name: Install dependencies
-        run: |
-          pip install --upgrade google-auth google-auth-oauthlib google-auth-httplib2 google-api-python-client requests oauth2client tqdm
-          sudo apt update && sudo apt install ffmpeg
+        run: pip install --upgrade google-auth google-auth-oauthlib google-auth-httplib2 google-api-python-client requests oauth2client tqdm && sudo apt update && sudo apt install ffmpeg
 
-      - name: Descargar, subir y eliminar primera parte
+      - name: Run script
         working-directory: /mnt/workspace
         run: |
-          # Obtener la duración total del video
-          DURATION=$(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "https://stream.kick.com/ivs/v1/196233775518/V3f9DWwe2lks/2025/4/1/16/15/JwdvOAppHrfG/media/hls/1080p60/playlist.m3u8")
-          HALF=$(python3 -c "import math; print(math.floor(float('$DURATION')/2))")
-          echo "Duración total: $DURATION segundos. Descargando primera parte de $HALF segundos."
-
-          # Descargar solo la primera mitad
-          ffmpeg -i "https://stream.kick.com/ivs/v1/196233775518/V3f9DWwe2lks/2025/4/1/16/15/JwdvOAppHrfG/media/hls/1080p60/playlist.m3u8" \
-            -c copy -t $HALF part1.ts
-
-          # Subir la primera parte
-          python script.py part1.ts "Parte 1"
-
-          # Eliminar primera parte después de subirla
-          rm part1.ts
-
-      - name: Descargar, subir y eliminar segunda parte
+         ffmpeg -i "https://stream.kick.com/ivs/v1/196233775518/V3f9DWwe2lks/2025/4/1/16/15/JwdvOAppHrfG/media/hls/1080p60/playlist.m3u8" \
+         -c copy \
+         -multiple_requests 1 \
+         -rtbufsize 100M \
+         -thread_queue_size 512 \
+         -http_persistent 1 \
+         output.ts
+         wget https://github.com/mazurikian/test/raw/refs/heads/main/oauth2.json
+         wget https://github.com/mazurikian/test/raw/refs/heads/main/script.py
+      
+      - name: Python
         working-directory: /mnt/workspace
         run: |
-          # Descargar la segunda mitad del video
-          ffmpeg -i "https://stream.kick.com/ivs/v1/196233775518/V3f9DWwe2lks/2025/4/1/16/15/JwdvOAppHrfG/media/hls/1080p60/playlist.m3u8" \
-            -c copy -ss $HALF part2.ts
-
-          # Subir la segunda parte
-          python script.py part2.ts "Parte 2"
-
-          # Eliminar segunda parte después de subirla
-          rm part2.ts
+          python script.py
