@@ -11,7 +11,7 @@ storage = Storage("oauth2.json")
 credentials = storage.get()
 
 if not credentials or credentials.invalid:
-    flow = flow_from_clientsecrets("client_secrets.json", "https://www.googleapis.com/auth/youtube.upload")
+    flow = flow_from_clientsecrets("client_secret.json", "https://www.googleapis.com/auth/youtube.upload")
     credentials = run_flow(flow, storage)
 
 youtube = build("youtube", "v3", credentials=credentials)
