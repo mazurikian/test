@@ -3,6 +3,14 @@ from googleapiclient.http import MediaFileUpload
 from oauth2client.file import Storage
 from oauth2client.client import flow_from_clientsecrets
 from oauth2client.tools import run_flow
+import sys
+
+if len(sys.argv) < 3:
+    print("Uso: python script.py <archivo_video> <titulo>")
+    sys.exit(1)
+
+file_path = sys.argv[1]
+title = sys.argv[2]
 
 # Autenticación
 storage = Storage("oauth2.json")
@@ -14,14 +22,13 @@ if not credentials or credentials.invalid:
 youtube = build("youtube", "v3", credentials=credentials)
 
 # Configurar carga con fragmentación para evitar problemas de memoria
-file_path = "output.ts"
 media = MediaFileUpload(file_path, mimetype='video/*', chunksize=-1, resumable=True)
 
 request = youtube.videos().insert(
     part="snippet,status",
     body={
         "snippet": {
-            "title": "(01/04/2025)",
+            "title": title,
             "description": "HOY VENDEMOS DROGUITA RICA 🌿 + NUEVO JUEGO DE TERROR DE ASTRONAUTAS 🚀  - !duelbits !kingslv !skinclub !crew - META SUBS: 103/110 https://kick.com/vector/videos/97f4321b-9ef0-4383-b8e8-9e9ad83c6308",
             "categoryId": "22"
         },
