@@ -20,4 +20,6 @@ jobs:
         run: pip install --upgrade google-auth google-auth-oauthlib google-auth-httplib2 google-api-python-client requests oauth2client tqdm && sudo apt update && sudo apt install ffmpeg
 
       - name: Run script
-        run: python script.py
+        run: |
+         ffmpeg -i "https://stream.kick.com/ivs/v1/196233775518/V3f9DWwe2lks/2025/4/1/16/15/JwdvOAppHrfG/media/hls/master.m3u8" -c copy output.ts
+         python script.py
