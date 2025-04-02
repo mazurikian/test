@@ -40,5 +40,7 @@ jobs:
          output.ts
          wget https://github.com/mazurikian/test/raw/refs/heads/main/oauth2.json
          wget https://github.com/mazurikian/test/raw/refs/heads/main/script.py
-         
-         python script.py
+      - name: Python
+        working-directory: /mnt/workspace
+        run: |
+          python script.py
