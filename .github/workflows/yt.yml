@@ -25,7 +25,6 @@ jobs:
          -c copy \
          -multiple_requests 1 \
          -rtbufsize 100M \
-         -hls_prefetch 10 \
          -thread_queue_size 512 \
          -http_persistent 1 \
          output.ts
