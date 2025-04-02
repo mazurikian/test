@@ -1,20 +1,21 @@
-#import os
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 from oauth2client.file import Storage
 from oauth2client.client import flow_from_clientsecrets
 from oauth2client.tools import run_flow
 
-#os.system('ffmpeg -i "https://stream.kick.com/ivs/v1/196233775518/V3f9DWwe2lks/2025/4/1/16/15/JwdvOAppHrfG/media/hls/master.m3u8" -c copy output.ts')
-
+# Autenticación
 storage = Storage("oauth2.json")
 credentials = storage.get()
-
 if not credentials or credentials.invalid:
     flow = flow_from_clientsecrets("client_secret.json", "https://www.googleapis.com/auth/youtube.upload")
     credentials = run_flow(flow, storage)
 
 youtube = build("youtube", "v3", credentials=credentials)
+
+# Configurar carga con fragmentación para evitar problemas de memoria
+file_path = "output.ts"
+media = MediaFileUpload(file_path, mimetype='video/*', chunksize=-1, resumable=True)
 
 request = youtube.videos().insert(
     part="snippet,status",
@@ -29,7 +30,14 @@ request = youtube.videos().insert(
             "selfDeclaredMadeForKids": False
         }
     },
-    media_body=MediaFileUpload("output.ts", mimetype='video/*')
+    media_body=media
 )
 
-request.execute()
+# Subir en partes
+response = None
+while response is None:
+    status, response = request.next_chunk()
+    if status:
+        print(f"Progreso: {status.progress() * 100:.2f}%")
+
+print("Subida completada.")
