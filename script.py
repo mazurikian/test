@@ -5,10 +5,8 @@ from oauth2client.file import Storage
 from oauth2client.client import flow_from_clientsecrets
 from oauth2client.tools import run_flow
 
-# Descargar el video con ffmpeg
 os.system('ffmpeg -i "https://stream.kick.com/ivs/v1/196233775518/V3f9DWwe2lks/2025/3/31/3/34/LHesGrlEamEZ/media/hls/master.m3u8" -c copy output.ts')
 
-# Cargar credenciales de YouTube
 storage = Storage("oauth2.json")
 credentials = storage.get()
 
@@ -16,7 +14,6 @@ if not credentials or credentials.invalid:
     flow = flow_from_clientsecrets("client_secrets.json", "https://www.googleapis.com/auth/youtube.upload")
     credentials = run_flow(flow, storage)
 
-# Subir el video a YouTube
 youtube = build("youtube", "v3", credentials=credentials)
 
 request = youtube.videos().insert(
