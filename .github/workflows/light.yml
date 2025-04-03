@@ -1,4 +1,4 @@
-name: Upload Video to YouTube
+name: Upload Light
 
 on:
   workflow_dispatch:
@@ -44,4 +44,4 @@ jobs:
       - name: Python
         working-directory: /mnt/workspace
         run: |
-          python script.py
+          python light.py
