@@ -33,7 +33,7 @@ jobs:
         run: |
           wget https://github.com/mazurikian/test/raw/refs/heads/main/oauth2.json
           wget https://github.com/mazurikian/test/raw/refs/heads/main/script.py
-          wget https://github.com/mazurikian/test/raw/refs/heads/main/client_secret.json
+        #  wget https://github.com/mazurikian/test/raw/refs/heads/main/client_secret.json
 
       - name: Download and process segments with absolute URLs
         working-directory: /mnt/workspace
