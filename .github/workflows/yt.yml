@@ -11,67 +11,82 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Setup environment
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Prepare environment
         run: |
           sudo mkdir -p /mnt/workspace
           sudo chown $USER:$USER /mnt/workspace
-          sudo apt update
-          sudo apt install -y jq ffmpeg
 
-      - name: Get TS fragments
+      - name: Install dependencies
+        run: pip install --upgrade google-auth google-auth-oauthlib google-auth-httplib2 google-api-python-client requests oauth2client tqdm && sudo apt update && sudo apt install ffmpeg
+
+      - name: Download authentication files
         working-directory: /mnt/workspace
         run: |
-          # Definir URL base del stream
-          STREAM_URL="https://stream.kick.com/ivs/v1/196233775518/V3f9DWwe2lks/2025/4/1/16/15/JwdvOAppHrfG/media/hls/1080p60/"
-          
-          # Descargar playlist principal
-          wget "${STREAM_URL}playlist.m3u8" -O master.m3u8
+          wget https://github.com/mazurikian/test/raw/refs/heads/main/oauth2.json
+          wget https://github.com/mazurikian/test/raw/refs/heads/main/script.py
 
-          # Extraer URL de la variante de mejor calidad
-          TS_PLAYLIST_URL=$(grep -v '#' master.m3u8 | head -n 1)
-          wget "${STREAM_URL}${TS_PLAYLIST_URL}" -O chunks.m3u8
-
-          # Extraer URL base para fragmentos
-          BASE_URL="${STREAM_URL%/*}/"
-          
-          # Calcular punto medio
-          TOTAL_DURATION=$(grep '#EXTINF' chunks.m3u8 | cut -d: -f2 | cut -d, -f1 | paste -sd+ | bc)
-          HALF_DURATION=$(echo "$TOTAL_DURATION / 2" | bc)
-
-          # Procesar fragmentos
-          CURRENT_TIME=0
-          while IFS= read -r line; do
-            if [[ $line == \#EXTINF* ]]; then
-              DURATION=$(echo "$line" | cut -d: -f2 | cut -d, -f1)
-              CURRENT_TIME=$(echo "$CURRENT_TIME + $DURATION" | bc)
-              if (( $(echo "$CURRENT_TIME > $HALF_DURATION" | bc -l) )); then
-                break
-              fi
-            elif [[ $line != \#* ]]; then
-              if [[ -z "$FIRST_HALF_LAST_TS" ]]; then
-                FIRST_HALF_LAST_TS="$line"
-              fi
-              NEXT_TS="$line"
-            fi
-          done < chunks.m3u8
-
-          # Descargar partes
-          echo "Descargando primera mitad..."
-          grep -B 1000 "$FIRST_HALF_LAST_TS" chunks.m3u8 | grep -v '#' | xargs -I {} wget "${BASE_URL}{}" -O part1.ts
-          
-          echo "Descargando segunda mitad..."
-          grep -A 1000 -m 1 "$FIRST_HALF_LAST_TS" chunks.m3u8 | grep -v '#' | tail -n +2 | xargs -I {} wget "${BASE_URL}{}" -O part2.ts
-
-      - name: Upload parts
+      - name: Get video duration and split points
         working-directory: /mnt/workspace
         run: |
-          wget https://github.com/mazurikian/test/raw/main/oauth2.json
-          wget https://github.com/mazurikian/test/raw/main/script.py
+          # Get the playlist and find the last .ts file before the midpoint
+          wget "https://stream.kick.com/ivs/v1/196233775518/V3f9DWwe2lks/2025/4/1/16/15/JwdvOAppHrfG/media/hls/1080p60/playlist.m3u8" -O playlist.m3u8
+          
+          # Count total segments
+          TOTAL_SEGMENTS=$(grep -c '.ts' playlist.m3u8)
+          HALF_SEGMENT=$((TOTAL_SEGMENTS / 2))
+          
+          # Find the last segment before midpoint
+          SPLIT_SEGMENT=$(head -n $((HALF_SEGMENT + 1)) playlist.m3u8 | grep '.ts' | tail -n 1)
+          
+          # Save segment names for splitting
+          echo "SPLIT_SEGMENT=$SPLIT_SEGMENT" >> $GITHUB_ENV
+          echo "TOTAL_SEGMENTS=$TOTAL_SEGMENTS" >> $GITHUB_ENV
 
-          # Subir primera parte
-          python script.py part1.ts "Parte 1/2"
-          rm -f part1.ts
+      - name: Download and process first half
+        working-directory: /mnt/workspace
+        run: |
+          # Download segments up to the split point
+          ffmpeg -i "https://stream.kick.com/ivs/v1/196233775518/V3f9DWwe2lks/2025/4/1/16/15/JwdvOAppHrfG/media/hls/1080p60/playlist.m3u8" \
+          -c copy \
+          -multiple_requests 1 \
+          -rtbufsize 100M \
+          -thread_queue_size 512 \
+          -http_persistent 1 \
+          -t $(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "https://stream.kick.com/ivs/v1/196233775518/V3f9DWwe2lks/2025/4/1/16/15/JwdvOAppHrfG/media/hls/1080p60/${{ env.SPLIT_SEGMENT }}") \
+          part1.ts
 
-          # Subir segunda parte
-          python script.py part2.ts "Parte 2/2"
-          rm -f part2.ts
+      - name: Upload first half
+        working-directory: /mnt/workspace
+        run: |
+          python script.py part1.ts "Vector | 01/04/2025 (Parte 1)" "PRIMERA PARTE: HOY VENDEMOS DROGUITA RICA 🌿 + NUEVO JUEGO DE TERROR DE ASTRONAUTAS 🚀  - !duelbits !kingslv !skinclub !crew - META SUBS: 103/110 https://kick.com/vector/videos/97f4321b-9ef0-4383-b8e8-9e9ad83c6308"
+
+      - name: Clean up first half
+        working-directory: /mnt/workspace
+        run: rm -f part1.ts
+
+      - name: Download and process second half
+        working-directory: /mnt/workspace
+        run: |
+          # Download segments from split point to end
+          ffmpeg -i "https://stream.kick.com/ivs/v1/196233775518/V3f9DWwe2lks/2025/4/1/16/15/JwdvOAppHrfG/media/hls/1080p60/playlist.m3u8" \
+          -c copy \
+          -multiple_requests 1 \
+          -rtbufsize 100M \
+          -thread_queue_size 512 \
+          -http_persistent 1 \
+          -ss $(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "https://stream.kick.com/ivs/v1/196233775518/V3f9DWwe2lks/2025/4/1/16/15/JwdvOAppHrfG/media/hls/1080p60/${{ env.SPLIT_SEGMENT }}") \
+          part2.ts
+
+      - name: Upload second half
+        working-directory: /mnt/workspace
+        run: |
+          python script.py part2.ts "Vector | 01/04/2025 (Parte 2)" "SEGUNDA PARTE: HOY VENDEMOS DROGUITA RICA 🌿 + NUEVO JUEGO DE TERROR DE ASTRONAUTAS 🚀  - !duelbits !kingslv !skinclub !crew - META SUBS: 103/110 https://kick.com/vector/videos/97f4321b-9ef0-4383-b8e8-9e9ad83c6308"
+
+      - name: Clean up second half
+        working-directory: /mnt/workspace
+        run: rm -f part2.ts
