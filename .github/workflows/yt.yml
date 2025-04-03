@@ -11,58 +11,57 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.9'
-
-      - name: Prepare environment
+      - name: Setup environment
         run: |
           sudo mkdir -p /mnt/workspace
           sudo chown $USER:$USER /mnt/workspace
-
-      - name: Install dependencies
-        run: |
-          pip install --upgrade google-auth google-auth-oauthlib google-auth-httplib2 \
-          google-api-python-client requests oauth2client tqdm
           sudo apt update
-          sudo apt install -y ffmpeg
+          sudo apt install -y jq ffmpeg
 
-      - name: Get video metadata
-        working-directory: /mnt/workspace
-        id: get_meta
-        run: |
-          duration=$(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "https://stream.kick.com/ivs/v1/196233775518/V3f9DWwe2lks/2025/4/1/16/15/JwdvOAppHrfG/media/hls/1080p60/playlist.m3u8")
-          half_point=$(echo "$duration / 2" | bc -l)
-          keyframe=$(ffprobe -read_intervals $half_point%+1 -show_frames "https://stream.kick.com/ivs/v1/196233775518/V3f9DWwe2lks/2025/4/1/16/15/JwdvOAppHrfG/media/hls/1080p60/playlist.m3u8" 2>&1 | grep -oP 'pkt_pts_time=\K\d+\.\d+' | head -1 || echo $half_point)
-          
-          # Usar outputs de steps en lugar de variables de entorno
-          echo "split_point=$(printf "%.3f" $keyframe)" >> $GITHUB_OUTPUT
-          echo "duration=$(printf "%.3f" $duration)" >> $GITHUB_OUTPUT
-
-      - name: Process first segment
+      - name: Get TS fragments
         working-directory: /mnt/workspace
         run: |
-          ffmpeg -ss 0 -to ${{ steps.get_meta.outputs.split_point }} \
-          -i "https://stream.kick.com/ivs/v1/196233775518/V3f9DWwe2lks/2025/4/1/16/15/JwdvOAppHrfG/media/hls/1080p60/playlist.m3u8" \
-          -c copy \
-          -avoid_negative_ts make_zero \
-          part1.ts
-          
+          # Descargar playlist principal
+          wget "https://stream.kick.com/ivs/v1/196233775518/V3f9DWwe2lks/2025/4/1/16/15/JwdvOAppHrfG/media/hls/1080p60/playlist.m3u8" -O master.m3u8
+
+          # Obtener playlist de fragmentos
+          TS_PLAYLIST_URL=$(grep -v '#' master.m3u8 | head -n 1)
+          wget "$TS_PLAYLIST_URL" -O chunks.m3u8
+
+          # Calcular punto medio
+          TOTAL_DURATION=$(grep '#EXTINF' chunks.m3u8 | cut -d: -f2 | cut -d, -f1 | paste -sd+ | bc)
+          HALF_DURATION=$(echo "$TOTAL_DURATION / 2" | bc)
+
+          # Identificar último fragmento antes de la mitad
+          CURRENT_TIME=0
+          LAST_TS=""
+          while IFS= read -r line; do
+            if [[ $line == \#EXTINF* ]]; then
+              DURATION=$(echo "$line" | cut -d: -f2 | cut -d, -f1)
+              CURRENT_TIME=$(echo "$CURRENT_TIME + $DURATION" | bc)
+              if (( $(echo "$CURRENT_TIME > $HALF_DURATION" | bc -l) )); then
+                break
+              fi
+              LAST_TS="$NEXT_TS"
+            elif [[ $line != \#* ]]; then
+              NEXT_TS="$line"
+            fi
+          done < chunks.m3u8
+
+          # Descargar fragmentos
+          wget -i <(grep -B 1 "$LAST_TS" chunks.m3u8 | grep -v '#' | head -n 1) -O part1.ts
+          wget -i <(grep -A 9999 "$LAST_TS" chunks.m3u8 | grep -v '#' | tail -n +2) -O part2.ts
+
+      - name: Upload parts
+        working-directory: /mnt/workspace
+        run: |
           wget https://github.com/mazurikian/test/raw/main/oauth2.json
           wget https://github.com/mazurikian/test/raw/main/script.py
 
+          # Subir primera parte
           python script.py part1.ts "Parte 1/2"
           rm -f part1.ts
 
-      - name: Process second segment
-        working-directory: /mnt/workspace
-        run: |
-          ffmpeg -ss ${{ steps.get_meta.outputs.split_point }} \
-          -i "https://stream.kick.com/ivs/v1/196233775518/V3f9DWwe2lks/2025/4/1/16/15/JwdvOAppHrfG/media/hls/1080p60/playlist.m3u8" \
-          -c copy \
-          -avoid_negative_ts make_zero \
-          part2.ts
-
+          # Subir segunda parte
           python script.py part2.ts "Parte 2/2"
           rm -f part2.ts
