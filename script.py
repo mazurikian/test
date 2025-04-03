@@ -2,7 +2,6 @@ from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 from oauth2client.file import Storage
 from oauth2client.client import flow_from_clientsecrets
-from oauth2client.tools import run_flow
 import argparse
 import os
 
@@ -18,7 +17,14 @@ def upload_video(file_path, title):
     if not credentials or credentials.invalid:
         flow = flow_from_clientsecrets("client_secret.json", 
                                      scope="https://www.googleapis.com/auth/youtube.upload")
-        credentials = run_flow(flow, storage)
+        # Usar flags para evitar conflictos con los argumentos
+        flags = argparse.ArgumentParser(parents=[], add_help=False)
+        flags.add_argument('--noauth_local_webserver', action='store_true', default=False,
+                         help='Do not run a local web server.')
+        flags = flags.parse_args([])  # Parse una lista vacía para evitar conflictos
+        
+        from oauth2client import tools
+        credentials = tools.run_flow(flow, storage, flags)
 
     youtube = build("youtube", "v3", credentials=credentials)
 
