@@ -21,27 +21,53 @@ jobs:
           sudo mkdir -p /mnt/workspace
           sudo chown $USER:$USER /mnt/workspace
 
-      - name: Download file
-        working-directory: /mnt/workspace
-        run: echo "Workspace ready"
-
       - name: Install dependencies
-        run: pip install --upgrade google-auth google-auth-oauthlib google-auth-httplib2 google-api-python-client requests oauth2client tqdm && sudo apt update && sudo apt install ffmpeg
+        run: |
+          pip install --upgrade google-auth google-auth-oauthlib google-auth-httplib2 \
+          google-api-python-client requests oauth2client tqdm
+          sudo apt update
+          sudo apt install -y ffmpeg
 
-      - name: Run script
+      - name: Get video metadata
         working-directory: /mnt/workspace
         run: |
-         ffmpeg -i "https://stream.kick.com/ivs/v1/196233775518/V3f9DWwe2lks/2025/4/2/17/1/IxbE4qHSDjY2/media/hls/1080p60/playlist.m3u8" \
-         -c copy \
-         -multiple_requests 1 \
-         -rtbufsize 100M \
-         -thread_queue_size 512 \
-         -http_persistent 1 \
-         output.ts
-         wget https://github.com/mazurikian/test/raw/refs/heads/main/oauth2.json
-         wget https://github.com/mazurikian/test/raw/refs/heads/main/script.py
-      
-      - name: Python
+          # Obtener duración y keyframe más cercano a la mitad
+          duration=$(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "https://stream.kick.com/ivs/v1/196233775518/V3f9DWwe2lks/2025/4/1/16/15/JwdvOAppHrfG/media/hls/1080p60/playlist.m3u8")
+          half_point=$(echo "$duration / 2" | bc -l)
+          
+          # Encontrar keyframe más cercano
+          keyframe=$(ffprobe -read_intervals $half_point%+1 -show_frames "https://stream.kick.com/ivs/v1/196233775518/V3f9DWwe2lks/2025/4/1/16/15/JwdvOAppHrfG/media/hls/1080p60/playlist.m3u8" 2>&1 | grep -oP 'pkt_pts_time=\K\d+\.\d+' | head -1)
+          
+          echo "SPLIT_POINT=$keyframe" >> $GITHUB_ENV
+          echo "DURATION=$duration" >> $GITHUB_ENV
+
+      - name: Process first segment
         working-directory: /mnt/workspace
         run: |
-          python script.py
+          # Descargar primera mitad con alineación a keyframe
+          ffmpeg -ss 0 -to ${{ env.SPLIT_POINT }} \
+          -i "https://stream.kick.com/ivs/v1/196233775518/V3f9DWwe2lks/2025/4/1/16/15/JwdvOAppHrfG/media/hls/1080p60/playlist.m3u8" \
+          -c copy \
+          -avoid_negative_ts make_zero \
+          -flags +global_header \
+          part1.ts
+          
+          wget https://github.com/mazurikian/test/raw/main/oauth2.json
+          wget https://github.com/mazurikian/test/raw/main/script.py
+
+          python script.py part1.ts "Parte 1/2"
+          rm part1.ts
+
+      - name: Process second segment
+        working-directory: /mnt/workspace
+        run: |
+          # Descargar segunda mitad desde keyframe
+          ffmpeg -ss ${{ env.SPLIT_POINT }} \
+          -i "https://stream.kick.com/ivs/v1/196233775518/V3f9DWwe2lks/2025/4/1/16/15/JwdvOAppHrfG/media/hls/1080p60/playlist.m3u8" \
+          -c copy \
+          -avoid_negative_ts make_zero \
+          -flags +global_header \
+          part2.ts
+
+          python script.py part2.ts "Parte 2/2"
+          rm part2.ts
