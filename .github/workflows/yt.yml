@@ -48,18 +48,18 @@ jobs:
         working-directory: /mnt/workspace
         run: |
           # Usar los inputs del workflow_dispatch
-          STREAM_BASE_URL="${{ github.event.inputs.stream_url }}"
+          STREAM_FULL_URL="${{ github.event.inputs.stream_url }}"
           VIDEO_TITLE="${{ github.event.inputs.video_title }}"
           VIDEO_DESCRIPTION="${{ github.event.inputs.video_description }}"
             
           # Descargar el playlist principal
-          wget "${STREAM_BASE_URL}playlist.m3u8" -O master.m3u8
+          wget "${STREAM_FULL_URL}" -O playlist.m3u8
             
           # Parsear y procesar los segmentos con URLs absolutas
           python -c "
           import m3u8
-          base_url = '${STREAM_BASE_URL}'
-          playlist = m3u8.load('master.m3u8')
+          base_url = os.path.dirname('${STREAM_FULL_URL}') + '/'
+          playlist = m3u8.load('playlist.m3u8')
             
           # Obtener URLs absolutas de todos los segmentos
           segments = [base_url + seg.uri if not seg.uri.startswith('http') else seg.uri for seg in playlist.segments]
@@ -96,4 +96,4 @@ jobs:
             
           echo "Uploading second part..."
           python script.py --file /mnt/workspace/temp_parts/part2.ts --title "$VIDEO_TITLE | Part 2/2" --description "$VIDEO_DESCRIPTION"
-          rm /mnt/workspace/temp_parts/part2.ts segments_absolute_part2.txt master.m3u8
+          rm /mnt/workspace/temp_parts/part2.ts segments_absolute_part2.txt playlist.m3u8
