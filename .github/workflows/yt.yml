@@ -1,4 +1,4 @@
-name: Upload Video to YouTube
+name: Upload Video to YouTube in Parts
 
 on:
   workflow_dispatch:
@@ -20,73 +20,65 @@ jobs:
         run: |
           sudo mkdir -p /mnt/workspace
           sudo chown $USER:$USER /mnt/workspace
+          mkdir -p /mnt/workspace/temp_parts
 
       - name: Install dependencies
-        run: pip install --upgrade google-auth google-auth-oauthlib google-auth-httplib2 google-api-python-client requests oauth2client tqdm && sudo apt update && sudo apt install ffmpeg
+        run: |
+          pip install --upgrade google-auth google-auth-oauthlib google-auth-httplib2 google-api-python-client requests oauth2client tqdm m3u8
+          sudo apt update
+          sudo apt install -y ffmpeg wget
 
       - name: Download authentication files
         working-directory: /mnt/workspace
         run: |
           wget https://github.com/mazurikian/test/raw/refs/heads/main/oauth2.json
           wget https://github.com/mazurikian/test/raw/refs/heads/main/script.py
+          wget https://github.com/mazurikian/test/raw/refs/heads/main/client_secret.json
 
-      - name: Get video duration and split points
+      - name: Download and process segments with absolute URLs
         working-directory: /mnt/workspace
         run: |
-          # Get the playlist and find the last .ts file before the midpoint
-          wget "https://stream.kick.com/ivs/v1/196233775518/V3f9DWwe2lks/2025/4/1/16/15/JwdvOAppHrfG/media/hls/1080p60/playlist.m3u8" -O playlist.m3u8
+          # Definir la URL base del stream
+          STREAM_BASE_URL="https://stream.kick.com/ivs/v1/196233775518/V3f9DWwe2lks/2025/4/1/16/15/JwdvOAppHrfG/media/hls/1080p60/"
           
-          # Count total segments
-          TOTAL_SEGMENTS=$(grep -c '.ts' playlist.m3u8)
-          HALF_SEGMENT=$((TOTAL_SEGMENTS / 2))
+          # Descargar el playlist principal
+          wget "${STREAM_BASE_URL}playlist.m3u8" -O master.m3u8
           
-          # Find the last segment before midpoint
-          SPLIT_SEGMENT=$(head -n $((HALF_SEGMENT + 1)) playlist.m3u8 | grep '.ts' | tail -n 1)
+          # Parsear y procesar los segmentos con URLs absolutas
+          python -c "
+          import m3u8
+          base_url = '${STREAM_BASE_URL}'
+          playlist = m3u8.load('master.m3u8')
           
-          # Save segment names for splitting
-          echo "SPLIT_SEGMENT=$SPLIT_SEGMENT" >> $GITHUB_ENV
-          echo "TOTAL_SEGMENTS=$TOTAL_SEGMENTS" >> $GITHUB_ENV
-
-      - name: Download and process first half
-        working-directory: /mnt/workspace
-        run: |
-          # Download segments up to the split point
-          ffmpeg -i "https://stream.kick.com/ivs/v1/196233775518/V3f9DWwe2lks/2025/4/1/16/15/JwdvOAppHrfG/media/hls/1080p60/playlist.m3u8" \
-          -c copy \
-          -multiple_requests 1 \
-          -rtbufsize 100M \
-          -thread_queue_size 512 \
-          -http_persistent 1 \
-          -t $(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "https://stream.kick.com/ivs/v1/196233775518/V3f9DWwe2lks/2025/4/1/16/15/JwdvOAppHrfG/media/hls/1080p60/${{ env.SPLIT_SEGMENT }}") \
-          part1.ts
-
-      - name: Upload first half
-        working-directory: /mnt/workspace
-        run: |
-          python script.py part1.ts "Vector | 01/04/2025 (Parte 1)" "PRIMERA PARTE: HOY VENDEMOS DROGUITA RICA 🌿 + NUEVO JUEGO DE TERROR DE ASTRONAUTAS 🚀  - !duelbits !kingslv !skinclub !crew - META SUBS: 103/110 https://kick.com/vector/videos/97f4321b-9ef0-4383-b8e8-9e9ad83c6308"
-
-      - name: Clean up first half
-        working-directory: /mnt/workspace
-        run: rm -f part1.ts
-
-      - name: Download and process second half
-        working-directory: /mnt/workspace
-        run: |
-          # Download segments from split point to end
-          ffmpeg -i "https://stream.kick.com/ivs/v1/196233775518/V3f9DWwe2lks/2025/4/1/16/15/JwdvOAppHrfG/media/hls/1080p60/playlist.m3u8" \
-          -c copy \
-          -multiple_requests 1 \
-          -rtbufsize 100M \
-          -thread_queue_size 512 \
-          -http_persistent 1 \
-          -ss $(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "https://stream.kick.com/ivs/v1/196233775518/V3f9DWwe2lks/2025/4/1/16/15/JwdvOAppHrfG/media/hls/1080p60/${{ env.SPLIT_SEGMENT }}") \
-          part2.ts
-
-      - name: Upload second half
-        working-directory: /mnt/workspace
-        run: |
-          python script.py part2.ts "Vector | 01/04/2025 (Parte 2)" "SEGUNDA PARTE: HOY VENDEMOS DROGUITA RICA 🌿 + NUEVO JUEGO DE TERROR DE ASTRONAUTAS 🚀  - !duelbits !kingslv !skinclub !crew - META SUBS: 103/110 https://kick.com/vector/videos/97f4321b-9ef0-4383-b8e8-9e9ad83c6308"
-
-      - name: Clean up second half
-        working-directory: /mnt/workspace
-        run: rm -f part2.ts
+          # Obtener URLs absolutas de todos los segmentos
+          segments = [base_url + seg.uri if not seg.uri.startswith('http') else seg.uri for seg in playlist.segments]
+          
+          total = len(segments)
+          split_point = total // 2 + total % 2  # Para números impares
+          
+          print(f'Total segments: {total}')
+          print(f'First part segments: {split_point}')
+          print(f'Second part segments: {total - split_point}')
+          
+          # Guardar listas de segmentos
+          with open('segments_absolute_part1.txt', 'w') as f:
+              f.write('\n'.join(segments[:split_point]))
+          with open('segments_absolute_part2.txt', 'w') as f:
+              f.write('\n'.join(segments[split_point:]))
+          "
+          
+          # Procesar primera parte
+          echo "Downloading and concatenating first part..."
+          ffmpeg -f concat -safe 0 -protocol_whitelist "file,http,https,tcp,tls" -i <(for f in $(cat segments_absolute_part1.txt); do echo "file '$f'"; done) -c copy -y /mnt/workspace/temp_parts/part1.ts
+          
+          echo "Uploading first part..."
+          python script.py --file /mnt/workspace/temp_parts/part1.ts --title "Vector | 01/04/2025 (Part 1/2)"
+          rm /mnt/workspace/temp_parts/part1.ts segments_absolute_part1.txt
+          
+          # Procesar segunda parte
+          echo "Downloading and concatenating second part..."
+          ffmpeg -f concat -safe 0 -protocol_whitelist "file,http,https,tcp,tls" -i <(for f in $(cat segments_absolute_part2.txt); do echo "file '$f'"; done) -c copy -y /mnt/workspace/temp_parts/part2.ts
+          
+          echo "Uploading second part..."
+          python script.py --file /mnt/workspace/temp_parts/part2.ts --title "Vector | 01/04/2025 (Part 2/2)"
+          rm /mnt/workspace/temp_parts/part2.ts segments_absolute_part2.txt master.m3u8
