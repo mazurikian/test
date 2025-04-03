@@ -30,23 +30,20 @@ jobs:
 
       - name: Get video metadata
         working-directory: /mnt/workspace
+        id: get_meta
         run: |
-          # Obtener duración con precisión
           duration=$(ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "https://stream.kick.com/ivs/v1/196233775518/V3f9DWwe2lks/2025/4/1/16/15/JwdvOAppHrfG/media/hls/1080p60/playlist.m3u8")
           half_point=$(echo "$duration / 2" | bc -l)
-          
-          # Detección robusta de keyframes
           keyframe=$(ffprobe -read_intervals $half_point%+1 -show_frames "https://stream.kick.com/ivs/v1/196233775518/V3f9DWwe2lks/2025/4/1/16/15/JwdvOAppHrfG/media/hls/1080p60/playlist.m3u8" 2>&1 | grep -oP 'pkt_pts_time=\K\d+\.\d+' | head -1 || echo $half_point)
           
-          # Formatear números para FFmpeg
-          echo "SPLIT_POINT=$(printf "%.3f" $keyframe)" >> $GITHUB_ENV
-          echo "DURATION=$(printf "%.3f" $duration)" >> $GITHUB_ENV
+          # Usar outputs de steps en lugar de variables de entorno
+          echo "split_point=$(printf "%.3f" $keyframe)" >> $GITHUB_OUTPUT
+          echo "duration=$(printf "%.3f" $duration)" >> $GITHUB_OUTPUT
 
       - name: Process first segment
         working-directory: /mnt/workspace
         run: |
-          # Usar formato numérico compatible
-          ffmpeg -ss 0 -to ${{ format('{0:.3f}', env.SPLIT_POINT) }} \
+          ffmpeg -ss 0 -to ${{ steps.get_meta.outputs.split_point }} \
           -i "https://stream.kick.com/ivs/v1/196233775518/V3f9DWwe2lks/2025/4/1/16/15/JwdvOAppHrfG/media/hls/1080p60/playlist.m3u8" \
           -c copy \
           -avoid_negative_ts make_zero \
@@ -61,7 +58,7 @@ jobs:
       - name: Process second segment
         working-directory: /mnt/workspace
         run: |
-          ffmpeg -ss ${{ format('{0:.3f}', env.SPLIT_POINT) }} \
+          ffmpeg -ss ${{ steps.get_meta.outputs.split_point }} \
           -i "https://stream.kick.com/ivs/v1/196233775518/V3f9DWwe2lks/2025/4/1/16/15/JwdvOAppHrfG/media/hls/1080p60/playlist.m3u8" \
           -c copy \
           -avoid_negative_ts make_zero \
