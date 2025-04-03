@@ -21,20 +21,25 @@ jobs:
       - name: Get TS fragments
         working-directory: /mnt/workspace
         run: |
+          # Definir URL base del stream
+          STREAM_URL="https://stream.kick.com/ivs/v1/196233775518/V3f9DWwe2lks/2025/4/1/16/15/JwdvOAppHrfG/media/hls/1080p60/"
+          
           # Descargar playlist principal
-          wget "https://stream.kick.com/ivs/v1/196233775518/V3f9DWwe2lks/2025/4/1/16/15/JwdvOAppHrfG/media/hls/1080p60/playlist.m3u8" -O master.m3u8
+          wget "${STREAM_URL}playlist.m3u8" -O master.m3u8
 
-          # Obtener playlist de fragmentos
+          # Extraer URL de la variante de mejor calidad
           TS_PLAYLIST_URL=$(grep -v '#' master.m3u8 | head -n 1)
-          wget "$TS_PLAYLIST_URL" -O chunks.m3u8
+          wget "${STREAM_URL}${TS_PLAYLIST_URL}" -O chunks.m3u8
 
+          # Extraer URL base para fragmentos
+          BASE_URL="${STREAM_URL%/*}/"
+          
           # Calcular punto medio
           TOTAL_DURATION=$(grep '#EXTINF' chunks.m3u8 | cut -d: -f2 | cut -d, -f1 | paste -sd+ | bc)
           HALF_DURATION=$(echo "$TOTAL_DURATION / 2" | bc)
 
-          # Identificar último fragmento antes de la mitad
+          # Procesar fragmentos
           CURRENT_TIME=0
-          LAST_TS=""
           while IFS= read -r line; do
             if [[ $line == \#EXTINF* ]]; then
               DURATION=$(echo "$line" | cut -d: -f2 | cut -d, -f1)
@@ -42,15 +47,20 @@ jobs:
               if (( $(echo "$CURRENT_TIME > $HALF_DURATION" | bc -l) )); then
                 break
               fi
-              LAST_TS="$NEXT_TS"
             elif [[ $line != \#* ]]; then
+              if [[ -z "$FIRST_HALF_LAST_TS" ]]; then
+                FIRST_HALF_LAST_TS="$line"
+              fi
               NEXT_TS="$line"
             fi
           done < chunks.m3u8
 
-          # Descargar fragmentos
-          wget -i <(grep -B 1 "$LAST_TS" chunks.m3u8 | grep -v '#' | head -n 1) -O part1.ts
-          wget -i <(grep -A 9999 "$LAST_TS" chunks.m3u8 | grep -v '#' | tail -n +2) -O part2.ts
+          # Descargar partes
+          echo "Descargando primera mitad..."
+          grep -B 1000 "$FIRST_HALF_LAST_TS" chunks.m3u8 | grep -v '#' | xargs -I {} wget "${BASE_URL}{}" -O part1.ts
+          
+          echo "Descargando segunda mitad..."
+          grep -A 1000 -m 1 "$FIRST_HALF_LAST_TS" chunks.m3u8 | grep -v '#' | tail -n +2 | xargs -I {} wget "${BASE_URL}{}" -O part2.ts
 
       - name: Upload parts
         working-directory: /mnt/workspace
