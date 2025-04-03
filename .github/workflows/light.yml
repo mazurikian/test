@@ -1,0 +1,47 @@
+name: Upload Video to YouTube
+
+on:
+  workflow_dispatch:
+
+jobs:
+  upload-video:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Prepare environment
+        run: |
+          sudo mkdir -p /mnt/workspace
+          sudo chown $USER:$USER /mnt/workspace
+
+      - name: Download file
+        working-directory: /mnt/workspace
+        run: echo "Workspace ready"
+
+      - name: Install dependencies
+        run: pip install --upgrade google-auth google-auth-oauthlib google-auth-httplib2 google-api-python-client requests oauth2client tqdm && sudo apt update && sudo apt install ffmpeg
+
+      - name: Run script
+        working-directory: /mnt/workspace
+        run: |
+         ffmpeg -i "https://stream.kick.com/ivs/v1/196233775518/V3f9DWwe2lks/2025/4/2/17/1/IxbE4qHSDjY2/media/hls/1080p60/playlist.m3u8" \
+         -c copy \
+         -multiple_requests 1 \
+         -rtbufsize 100M \
+         -thread_queue_size 512 \
+         -http_persistent 1 \
+         output.ts
+         wget https://github.com/mazurikian/test/raw/refs/heads/main/oauth2.json
+         wget https://github.com/mazurikian/test/raw/refs/heads/main/script.py
+      
+      - name: Python
+        working-directory: /mnt/workspace
+        run: |
+          python script.py
