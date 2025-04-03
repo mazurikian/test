@@ -39,7 +39,7 @@ jobs:
          -http_persistent 1 \
          output.ts
          wget https://github.com/mazurikian/test/raw/refs/heads/main/oauth2.json
-         wget https://github.com/mazurikian/test/raw/refs/heads/main/script.py
+         wget https://github.com/mazurikian/test/raw/refs/heads/main/light.py
       
       - name: Python
         working-directory: /mnt/workspace
