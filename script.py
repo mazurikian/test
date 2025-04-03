@@ -6,7 +6,7 @@ from oauth2client.tools import run_flow
 import argparse
 import os
 
-def upload_video(file_path, title, description):
+def upload_video(file_path, title):
     # Verificar si el archivo existe
     if not os.path.exists(file_path):
         print(f"Error: El archivo {file_path} no existe")
@@ -17,7 +17,7 @@ def upload_video(file_path, title, description):
     credentials = storage.get()
     if not credentials or credentials.invalid:
         flow = flow_from_clientsecrets("client_secret.json", 
-                                       scope="https://www.googleapis.com/auth/youtube.upload")
+                                     scope="https://www.googleapis.com/auth/youtube.upload")
         credentials = run_flow(flow, storage)
 
     youtube = build("youtube", "v3", credentials=credentials)
@@ -31,7 +31,7 @@ def upload_video(file_path, title, description):
             body={
                 "snippet": {
                     "title": title,
-                    "description": description,
+                    "description": "HOY VENDEMOS DROGUITA RICA 🌿 + NUEVO JUEGO DE TERROR DE ASTRONAUTAS 🚀  - !duelbits !kingslv !skinclub !crew - META SUBS: 103/110 https://kick.com/vector/videos/97f4321b-9ef0-4383-b8e8-9e9ad83c6308",
                     "categoryId": "22"
                 },
                 "status": {
@@ -57,7 +57,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--file", required=True, help="Path to video file")
     parser.add_argument("--title", required=True, help="Video title")
-    parser.add_argument("--description", required=True, help="Video description")
     args = parser.parse_args()
     
-    upload_video(args.file, args.title, args.description)
+    upload_video(args.file, args.title)
