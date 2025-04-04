@@ -2,16 +2,6 @@ name: Upload Video to YouTube in Parts
 
 on:
   workflow_dispatch:
-    inputs:
-      video_title:
-        description: 'Título del video'
-        required: true
-      video_description:
-        description: 'Descripción del video'
-        required: true
-      stream_url:
-        description: 'URL base del stream'
-        required: true
 
 jobs:
   upload-video:
@@ -41,60 +31,54 @@ jobs:
       - name: Download authentication files
         working-directory: /mnt/workspace
         run: |
-          wget https://github.com/mazurikian/test/raw/refs/heads/main/client_secret.json
+          wget https://github.com/mazurikian/test/raw/refs/heads/main/oauth2.json
           wget https://github.com/mazurikian/test/raw/refs/heads/main/script.py
+        #  wget https://github.com/mazurikian/test/raw/refs/heads/main/client_secret.json
 
       - name: Download and process segments with absolute URLs
         working-directory: /mnt/workspace
         run: |
-          # Usar los inputs del workflow_dispatch
-          STREAM_FULL_URL="${{ github.event.inputs.stream_url }}"
-          VIDEO_TITLE="${{ github.event.inputs.video_title }}"
-          VIDEO_DESCRIPTION="${{ github.event.inputs.video_description }}"
-            
+          # Definir la URL base del stream
+          STREAM_BASE_URL="https://stream.kick.com/ivs/v1/196233775518/V3f9DWwe2lks/2025/4/1/16/15/JwdvOAppHrfG/media/hls/1080p60/"
+          
           # Descargar el playlist principal
-          wget "${STREAM_FULL_URL}" -O playlist.m3u8
-            
+          wget "${STREAM_BASE_URL}playlist.m3u8" -O master.m3u8
+          
           # Parsear y procesar los segmentos con URLs absolutas
           python -c "
-          import os
           import m3u8
-          base_url = os.path.dirname('${STREAM_FULL_URL}') + '/'
-          playlist = m3u8.load('playlist.m3u8')
-            
+          base_url = '${STREAM_BASE_URL}'
+          playlist = m3u8.load('master.m3u8')
+          
           # Obtener URLs absolutas de todos los segmentos
           segments = [base_url + seg.uri if not seg.uri.startswith('http') else seg.uri for seg in playlist.segments]
-            
+          
           total = len(segments)
           split_point = total // 2 + total % 2  # Para números impares
-            
+          
           print(f'Total segments: {total}')
           print(f'First part segments: {split_point}')
           print(f'Second part segments: {total - split_point}')
-            
+          
           # Guardar listas de segmentos
           with open('segments_absolute_part1.txt', 'w') as f:
               f.write('\n'.join(segments[:split_point]))
           with open('segments_absolute_part2.txt', 'w') as f:
               f.write('\n'.join(segments[split_point:]))
           "
-            
+          
           # Procesar primera parte
           echo "Downloading and concatenating first part..."
           ffmpeg -f concat -safe 0 -protocol_whitelist "file,http,https,tcp,tls" -i <(for f in $(cat segments_absolute_part1.txt); do echo "file '$f'"; done) -c copy -y /mnt/workspace/temp_parts/part1.ts
-            
+          
           echo "Uploading first part..."
-          python script.py --file /mnt/workspace/temp_parts/part1.ts --title "$VIDEO_TITLE | Part 1/2" --description "$VIDEO_DESCRIPTION"
+          python script.py --file /mnt/workspace/temp_parts/part1.ts --title "Vector | 01/04/2025 (Part 1/2)"
           rm /mnt/workspace/temp_parts/part1.ts segments_absolute_part1.txt
-
-          # Esperar 1 hora antes de subir la segunda parte
-          echo "Waiting for 1 hour before uploading the second part..."
-          sleep 3600  # 3600 segundos = 1 hora
-            
+          
           # Procesar segunda parte
           echo "Downloading and concatenating second part..."
           ffmpeg -f concat -safe 0 -protocol_whitelist "file,http,https,tcp,tls" -i <(for f in $(cat segments_absolute_part2.txt); do echo "file '$f'"; done) -c copy -y /mnt/workspace/temp_parts/part2.ts
-            
+          
           echo "Uploading second part..."
-          python script.py --file /mnt/workspace/temp_parts/part2.ts --title "$VIDEO_TITLE | Part 2/2" --description "$VIDEO_DESCRIPTION"
-          rm /mnt/workspace/temp_parts/part2.ts segments_absolute_part2.txt playlist.m3u8
+          python script.py --file /mnt/workspace/temp_parts/part2.ts --title "Vector | 01/04/2025 (Part 2/2)"
+          rm /mnt/workspace/temp_parts/part2.ts segments_absolute_part2.txt master.m3u8
