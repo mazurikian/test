@@ -31,7 +31,7 @@ def upload_video(file_path, title):
             body={
                 "snippet": {
                     "title": title,
-                    "description": "HOY VENDEMOS DROGUITA RICA 🌿 + NUEVO JUEGO DE TERROR DE ASTRONAUTAS 🚀  - !duelbits !kingslv !skinclub !crew - META SUBS: 103/110 https://kick.com/vector/videos/97f4321b-9ef0-4383-b8e8-9e9ad83c6308",
+                    "description": "HOY SEGUIMOS RAFT + VENDEMO? + SPLIT FICTION CON ROMMEL!!!  - !duelbits !kingslv !skinclub !crew - META SUBS: 100/11 https://kick.com/vector/videos/c3aecdc4-1748-4366-954c-496643c7f440",
                     "categoryId": "22"
                 },
                 "status": {
