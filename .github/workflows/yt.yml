@@ -1,3 +1,4 @@
+
 name: Upload Video to YouTube in Parts
 
 on:
@@ -39,7 +40,7 @@ jobs:
         working-directory: /mnt/workspace
         run: |
           # Definir la URL base del stream
-          STREAM_BASE_URL="https://stream.kick.com/ivs/v1/196233775518/V3f9DWwe2lks/2025/4/1/16/15/JwdvOAppHrfG/media/hls/1080p60/"
+          STREAM_BASE_URL="https://stream.kick.com/ivs/v1/196233775518/V3f9DWwe2lks/2025/4/3/16/46/BQ7twkXm7SBe/media/hls/1080p60"
           
           # Descargar el playlist principal
           wget "${STREAM_BASE_URL}playlist.m3u8" -O master.m3u8
