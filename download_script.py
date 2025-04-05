@@ -99,8 +99,18 @@ def create_bucket_identifier(prefix, title, upload_date):
 # Descarga el archivo de video usando ffmpeg.
 def download_video(m3u8_url, filename):
     subprocess.run(
-        ["ffmpeg", "-hide_banner", "-i", m3u8_url, "-c", "copy", filename],
-        check=True
+        [
+            "ffmpeg",
+            "-hide_banner",
+            "-user_agent", "Mozilla/5.0",
+            "-err_detect", "ignore_err",
+            "-protocol_whitelist", "file,http,https,tcp,tls",
+            "-i", m3u8_url,
+            "-c", "copy",
+            "-y",  # overwrite output if exists
+            filename
+        ],
+        check=False  # importante: no fallar si ffmpeg devuelve error
     )
     return True
 
