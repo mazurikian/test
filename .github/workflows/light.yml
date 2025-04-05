@@ -31,7 +31,7 @@ jobs:
       - name: Run script
         working-directory: /mnt/workspace
         run: |
-         ffmpeg -i "https://stream.kick.com/ivs/v1/196233775518/V3f9DWwe2lks/2025/4/2/17/1/IxbE4qHSDjY2/media/hls/1080p60/playlist.m3u8" \
+         ffmpeg -i "https://stream.kick.com/ivs/v1/196233775518/V3f9DWwe2lks/2025/4/4/17/3/FWcDedshrRpF/media/hls/1080p60/playlist.m3u8" \
          -c copy \
          -multiple_requests 1 \
          -rtbufsize 100M \
