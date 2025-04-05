@@ -98,22 +98,22 @@ def create_bucket_identifier(prefix, title, upload_date):
 
 # Descarga el archivo de video usando ffmpeg.
 def download_video(m3u8_url, filename):
-    subprocess.run(
-        [
-            "ffmpeg",
-            "-hide_banner",
-            "-user_agent", "Mozilla/5.0",
-            "-err_detect", "ignore_err",
-            "-protocol_whitelist", "file,http,https,tcp,tls",
-            "-i", m3u8_url,
-            "-c", "copy",
-            "-y",  # overwrite output if exists
-            filename
-        ],
-        check=False  # importante: no fallar si ffmpeg devuelve error
-    )
-    return True
+    cmd = [
+        "ffmpeg",
+        "-hide_banner",
+        "-user_agent", "Mozilla/5.0",
+        "-protocol_whitelist", "file,http,https,tcp,tls",
+        "-err_detect", "ignore_err",
+        "-timeout", "5000000",  # 5 segundos por intento (en microsegundos)
+        "-rw_timeout", "5000000",  # 5 segundos de timeout de lectura
+        "-max_reload", "2",  # intenta 2 veces por segmento antes de saltar
+        "-i", m3u8_url,
+        "-c", "copy",
+        "-y",
+        filename
+    ]
 
+    subprocess.run(cmd, check=False)
 # Obtiene la URL directa del stream usando yt-dlp.
 def get_stream_url(url):
     result = subprocess.run(
