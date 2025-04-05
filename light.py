@@ -21,8 +21,8 @@ request = youtube.videos().insert(
     part="snippet,status",
     body={
         "snippet": {
-            "title": "Vector | 02/04/2025",
-            "description": "HOY EMPEZAMOS SERIE DE RAFT!!! Supervivencia en el mar 🌊🌊🌊  - !duelbits !kingslv !skinclub !crew - META SUBS: 103/110 https://kick.com/vector/videos/97f4321b-9ef0-4383-b8e8-9e9ad83c6308",
+            "title": "Vector | 04/04/2025",
+            "description": "HOY MUCHA VARIEDAD, IGUAL QUE SIEMPRE - !duelbits !kingslv !skinclub !crew - META SUBS: 100/110 https://kick.com/vector/videos/61af5890-65d0-48ec-acf3-804aa594ae58",
             "categoryId": "22"
         },
         "status": {
