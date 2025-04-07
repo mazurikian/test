@@ -101,6 +101,8 @@ def download_video(m3u8_url, filename):
     cmd = [
         "ffmpeg",
         "-hide_banner",
+        "-loglevel", 
+        "error", 
         "-user_agent", "Mozilla/5.0",
         "-protocol_whitelist", "file,http,https,tcp,tls",
         "-err_detect", "ignore_err",
