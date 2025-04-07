@@ -31,7 +31,7 @@ def upload_video(file_path, title):
             body={
                 "snippet": {
                     "title": title,
-                    "description": "HOY SEGUIMOS RAFT + VENDEMO? + SPLIT FICTION CON ROMMEL!!!  - !duelbits !kingslv !skinclub !crew - META SUBS: 100/11 https://kick.com/vector/videos/c3aecdc4-1748-4366-954c-496643c7f440",
+                    "description": "QUEDATE A PASAR EL DIA JUNTOS O DEJA LA VIEW 😡😡 - !duelbits !kingslv !skinclub !crew - META SUBS: 100/110 https://kick.com/vector/videos/aae7c8da-4f06-4bf4-aa16-9575224df0dc",
                     "categoryId": "22"
                 },
                 "status": {
