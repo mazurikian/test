@@ -1,8 +1,13 @@
+import sys
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 from oauth2client.file import Storage
 from oauth2client.client import flow_from_clientsecrets
 from oauth2client.tools import run_flow
+
+# Obtener argumentos del workflow
+title = sys.argv[1] if len(sys.argv) > 1 else "Video sin título"
+description = sys.argv[2] if len(sys.argv) > 2 else "Sin descripción"
 
 # Autenticación
 storage = Storage("oauth2.json")
@@ -13,7 +18,6 @@ if not credentials or credentials.invalid:
 
 youtube = build("youtube", "v3", credentials=credentials)
 
-# Configurar carga con fragmentación para evitar problemas de memoria
 file_path = "output.ts"
 media = MediaFileUpload(file_path, mimetype='video/*', chunksize=-1, resumable=True)
 
@@ -21,8 +25,8 @@ request = youtube.videos().insert(
     part="snippet,status",
     body={
         "snippet": {
-            "title": "Vector | 04/04/2025",
-            "description": "HOY MUCHA VARIEDAD, IGUAL QUE SIEMPRE - !duelbits !kingslv !skinclub !crew - META SUBS: 100/110 https://kick.com/vector/videos/61af5890-65d0-48ec-acf3-804aa594ae58",
+            "title": title,
+            "description": description,
             "categoryId": "22"
         },
         "status": {
