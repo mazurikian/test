@@ -1,9 +1,6 @@
 name: Run Python2 Script
 
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch:
 
 jobs:
