@@ -31,7 +31,7 @@ def upload_video(file_path, title):
             body={
                 "snippet": {
                     "title": title,
-                    "description": "QUEDATE A PASAR EL DIA JUNTOS O DEJA LA VIEW 😡😡 - !duelbits !kingslv !skinclub !crew - META SUBS: 100/110 https://kick.com/vector/videos/aae7c8da-4f06-4bf4-aa16-9575224df0dc",
+                    "description": "LLEGO EL ASESINO DE DEMONIOS 👹⚔️ - !duelbits !kingslv !skinclub !crew - META SUBS: 98/100 https://kick.com/vector/videos/0db1d36b-b2a7-4576-8973-9efeaf120c92",
                     "categoryId": "22"
                 },
                 "status": {
