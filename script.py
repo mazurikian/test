@@ -31,7 +31,7 @@ def upload_video(file_path, title):
             body={
                 "snippet": {
                     "title": title,
-                    "description": "DEJA LA VIEW Y TE GANAS UN BESO 😍😍😍  - !duelbits !kingslv !skinclub !crew - META SUBS: 98/100 https://kick.com/vector/videos/58aa9c57-5a96-45ce-bc49-9d539f7ade9b",
+                    "description": "VENI A FARMEAR PUNTOS DEL CANAL... O TE VAS A ARREPENTIR CUANDO HAYA RECOMPENSAS 😇😇  - !duelbits !kingslv !crew - META SUBS: 102/120 https://kick.com/vector/videos/c75f0f6e-9403-4cde-813d-4bdbc1d193f5",
                     "categoryId": "22"
                 },
                 "status": {
