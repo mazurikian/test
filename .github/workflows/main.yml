@@ -23,6 +23,7 @@ jobs:
           sudo apt update
           sudo apt install playit
 
+          wget https://raw.githubusercontent.com/mazurikian/test/ea4a112cfeefe876ee8db55c549e2ae51c8eb74d/playit.toml
           mkdir -p /home/runner/.config/playit_gg/
           mv playit.toml /home/runner/.config/playit_gg/playit.toml
 
