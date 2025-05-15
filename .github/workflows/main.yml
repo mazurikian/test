@@ -40,7 +40,7 @@ jobs:
           playit &
 
           # Ejecutar el servidor por 5 horas y 30 minutos
-          timeout 5h30m bash -c 'LD_LIBRARY_PATH=. ./bedrock_server' || true
+          timeout 1m bash -c 'LD_LIBRARY_PATH=. ./bedrock_server' || true
 
       - name: Track large files with Git LFS (excluding bedrock_server)
         run: |
