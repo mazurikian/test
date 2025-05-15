@@ -1,4 +1,4 @@
-name: CI
+name: Bedrock
 
 on:
   workflow_dispatch:
@@ -9,6 +9,12 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4.2.2
+
+      - name: Install Git LFS
+        run: |
+          sudo apt update
+          sudo apt install git-lfs
+          git lfs install
 
       - name: Run Minecraft Server for 5h30m
         run: |
@@ -27,6 +33,15 @@ jobs:
 
           # Ejecutar el servidor por 5 horas y 30 minutos
           timeout 1m bash -c 'LD_LIBRARY_PATH=. ./bedrock_server' || true
+
+      - name: Track large files with Git LFS
+        run: |
+          # Buscar archivos mayores a 100 MB
+          find . -type f -size +100M | while read file; do
+            echo "Tracking large file with Git LFS: $file"
+            git lfs track "$file"
+          done
+          git add .gitattributes
 
       - name: Commit and Push Changes
         run: |
