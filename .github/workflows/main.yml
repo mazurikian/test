@@ -22,9 +22,6 @@ jobs:
           
           unzip -o bedrock-server-1.21.81.2.zip bedrock_server
 
-          # Reemplazar el ejecutable
-          chmod +x bedrock_server
-
       - name: Run Minecraft Server for 5h30m
         run: |
           # Instalar y configurar Playit
