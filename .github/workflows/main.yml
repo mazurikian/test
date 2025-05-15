@@ -29,6 +29,8 @@ jobs:
 
           playit &
 
+          chmod +x bedrock_server
+
           # Ejecutar el servidor por 5 horas y 30 minutos
           timeout 1m bash -c 'LD_LIBRARY_PATH=. ./bedrock_server' || true
 
