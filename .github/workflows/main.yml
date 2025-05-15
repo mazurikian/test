@@ -26,9 +26,6 @@ jobs:
           mkdir -p /home/runner/.config/playit_gg/
           mv playit.toml /home/runner/.config/playit_gg/playit.toml
 
-          wget --user-agent="Mozilla/5.0" https://www.minecraft.net/bedrockdedicatedserver/bin-linux/bedrock-server-1.21.81.2.zip
-          unzip bedrock-server-1.21.81.2.zip
-
           playit &
 
           # Ejecutar el servidor por 5 horas y 30 minutos
