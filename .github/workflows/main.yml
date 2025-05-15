@@ -22,7 +22,7 @@ jobs:
           
           unzip -o bedrock-server-1.21.81.2.zip bedrock_server
 
-      - name: Run Minecraft Server for 5h30m
+      - name: Run Minecraft Server
         run: |
           # Instalar y configurar Playit
           curl -SsL https://playit-cloud.github.io/ppa/key.gpg | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/playit.gpg >/dev/null
