@@ -1,34 +1,43 @@
-# This is a basic workflow to help you get started with Actions
-
 name: CI
 
-# Controls when the workflow will run
 on:
-  # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  # This workflow contains a single job called "build"
   build:
-    # The type of runner that the job will run on
     runs-on: ubuntu-latest
 
-    # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v4.2.2
 
-      # Runs a set of commands using the runners shell
-      - name: Run a multi-line script
+      - name: Run Minecraft Server for 5h30m
         run: |
           curl -SsL https://playit-cloud.github.io/ppa/key.gpg | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/playit.gpg >/dev/null
           echo "deb [signed-by=/etc/apt/trusted.gpg.d/playit.gpg] https://playit-cloud.github.io/ppa/data ./" | sudo tee /etc/apt/sources.list.d/playit-cloud.list
           sudo apt update
           sudo apt install playit
+
           mkdir -p /home/runner/.config/playit_gg/
           mv playit.toml /home/runner/.config/playit_gg/playit.toml
+
           wget --user-agent="Mozilla/5.0" https://www.minecraft.net/bedrockdedicatedserver/bin-linux/bedrock-server-1.21.81.2.zip
           unzip bedrock-server-1.21.81.2.zip
+
           playit &
-          LD_LIBRARY_PATH=. ./bedrock_server
+
+          # Ejecutar el servidor por 5 horas y 30 minutos
+          timeout 1m bash -c 'LD_LIBRARY_PATH=. ./bedrock_server'
+
+      - name: Commit and Push Changes
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add -A
+
+          if ! git diff --cached --quiet; then
+            git commit -m "Auto-commit: Minecraft server changes after 5h30m"
+            git push
+          else
+            echo "No changes to commit"
+          fi
