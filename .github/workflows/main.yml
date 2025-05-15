@@ -36,13 +36,11 @@ jobs:
 
           playit &
 
-          # Ejecutar el servidor por 5 horas y 30 minutos
+          # Ejecutar el servidor
           timeout 1m bash -c 'LD_LIBRARY_PATH=. ./bedrock_server' || true
 
       - name: Track large files with Git LFS (excluding bedrock_server)
         run: |
-          # Excluir bedrock_server del seguimiento
-          echo "bedrock_server" >> .gitignore
 
           # Buscar archivos mayores a 100 MB (excluyendo bedrock_server)
           find . -type f -size +100M ! -name bedrock_server | while read file; do
@@ -60,7 +58,7 @@ jobs:
           git reset bedrock_server || true  # Asegurarse de no incluirlo
 
           if ! git diff --cached --quiet; then
-            git commit -m "Auto-commit: Minecraft server changes after 5h30m"
+            git commit -m "Auto-commit: Minecraft server changes $(date)"
             git push
           else
             echo "No changes to commit"
