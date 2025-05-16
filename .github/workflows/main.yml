@@ -1,4 +1,4 @@
-name: Bedrock
+name: Bedrock Server
 
 on:
   workflow_dispatch:
@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4.2.2
 
       - name: Install Git LFS
@@ -36,15 +36,11 @@ jobs:
 
           playit &
 
-          # Ejecutar el servidor
           timeout 350m bash -c 'LD_LIBRARY_PATH=. ./bedrock_server' || true
 
       - name: Track large files with Git LFS (excluding bedrock_server)
         run: |
-
-          # Buscar archivos mayores a 100 MB (excluyendo bedrock_server)
           find . -type f -size +100M ! -name bedrock_server | while read file; do
-            echo "Tracking large file with Git LFS: $file"
             git lfs track "$file"
           done
           git add .gitattributes
@@ -55,7 +51,7 @@ jobs:
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
           git add -A
-          git reset bedrock_server || true  # Asegurarse de no incluirlo
+          git reset bedrock_server || true
 
           if ! git diff --cached --quiet; then
             git commit -m "Auto-commit: Minecraft server changes $(date)"
