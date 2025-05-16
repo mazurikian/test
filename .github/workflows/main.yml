@@ -19,12 +19,10 @@ jobs:
 
       - name: Replace bedrock_server binary
         run: |
-          
           unzip -o bedrock-server-1.21.81.2.zip bedrock_server
 
       - name: Run Minecraft Server
         run: |
-          # Instalar y configurar Playit
           curl -SsL https://playit-cloud.github.io/ppa/key.gpg | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/playit.gpg >/dev/null
           echo "deb [signed-by=/etc/apt/trusted.gpg.d/playit.gpg] https://playit-cloud.github.io/ppa/data ./" | sudo tee /etc/apt/sources.list.d/playit-cloud.list
           sudo apt update
